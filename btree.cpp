@@ -12,62 +12,69 @@ template<typename keyType>
 void btree<keyType>::setRoot() { leaf = true; }
 
 template<typename keyType>
-bool btree<keyType>::search(btree* x, keyType k) {	//check
-	int i = 0, n = x->key_n;
-	while (i < n && k > x->key[i++]);
-	if (i < n && k == x->key[i]) return true;
-	else if (x->leaf) return false;
-	return search(x->key[i], k);
+bool btree<keyType>::search(keyType k) {	//check
+	int i = 0;
+	while (i < key_n && k > key[i]) i++;
+	if (i < key_n && k == key[i]) return true;
+	else if (leaf) return false;
+	return child[i]->search(k);
 }
 
 template<typename keyType>
 void btree<keyType>::split(btree* x, int i) {	//split the node
-	btree* z = new btree(), *y = x->child[i];
-	z->leaf = y->leaf;
-	z->key_n = DEGREE - 1;
+	btree* z = new btree(), *y = x->getC(i);
+	z->setL(y->getL());
+	z->setN(DEGREE - 1);
 	for (int j = 0; j < DEGREE - 1; j++)
-		z->key[j] = y->key[j + DEGREE];
+		z->setK(j, y->getK(j + DEGREE));
 	if (y->leaf == false)
 		for (int j = 0; j < DEGREE; j++)
-			z->child[j] = y->child[j + DEGREE];
-	y->key_n = DEGREE - 1;
-	for (int j = x->key_n - 1; j >= i; j--)
-		x->key[j + 1] = x->key[j];
-	x->key[i] = y->key[DEGREE - 1];
-	x->key_n++;
+			z->setC(j, y->getC(j + DEGREE));
+	y->setN(DEGREE - 1);
+	//y->show();//test
+	//z->show();//test
+	for (int j = x->getN(); j > i; j--)
+		x->setC(j + 1, x->getC(j));
+	x->setC(i + 1, z);
+	for (int j = x->getN() - 1; j >= i; j--)
+		x->setK(j + 1, x->getK(j));
+	x->setK(i, y->getK(DEGREE - 1));
+	x->setN(x->getN() + 1);
+	x->show();//test
+	cout << endl;//test
 }
 
 template<typename keyType>
 void btree<keyType>::insertNon(btree* x, keyType k) {	//while NonFull
-	int i = x->key_n - 1;
+	int i = x->getN() - 1;
 	if (x->leaf) {
-		while (i >= 0 && k < x->key[i]) {
-			x->key[i + 1] = x->key[i];
+		while (i >= 0 && k < x->getK(i)) {
+			x->setK(i + 1, x->getK(i));
 			i--;
 		}
-		x->key[i + 1] = k;
-		x->key_n++;
+		x->setK(i + 1, k);
+		x->setN(x->getN() + 1);
 	}
 	else {
-		while (i >= 0 && k < x->key[i]) i--;
+		while (i >= 0 && k < x->getK(i)) i--;
 		i++;
-		if (x->child[i]->key_n == 2 * DEGREE - 1) {
+		if (x->getC(i)->getN() == 2 * DEGREE - 1) {
 			split(x, i);
-			if (k > x->key[i]) i++;
+			if (k > x->getK(i)) i++;
 		}
-		insertNon(x->child[i], k);
+		insertNon(x->getC(i), k);
 	}
 }
 
 template<typename keyType>
-void btree<keyType>::insert(btree* root, keyType k) {	//insert the k after spliting
+void btree<keyType>::insert(btree*& root, keyType k) {	//insert the k after spliting
 	btree* r = root;
-	if (2 * DEGREE - 1 == r->key_n) {
+	if (2 * DEGREE - 1 == r->getN()) {
 		btree* s = new btree();
 		root = s;
-		s->leaf = false;
-		s->key_n = 0;
-		s->child[0] = r;
+		s->setN(0);
+		s->setL(false);
+		s->setC(0, r);
 		split(s, 0);
 		insertNon(s, k);
 	}
@@ -80,21 +87,43 @@ void btree<keyType>::del(btree* x, keyType key) {
 }
 
 template<typename keyType>
+int btree<keyType>::getN() { return key_n; }
+
+template<typename keyType>
+bool btree<keyType>::getL() { return leaf; }
+
+template<typename keyType>
+keyType btree<keyType>::getK(int i) { return key[i]; }
+
+template<typename keyType>
+btree<keyType>* btree<keyType>::getC(int i) { return child[i]; }
+
+template<typename keyType>
+void btree<keyType>::setN(int n) { key_n = n; }
+
+template<typename keyType>
+void btree<keyType>::setL(bool b) { leaf = b; }
+
+template<typename keyType>
+void btree<keyType>::setK(int i, int n) { key[i] = n; }
+
+template<typename keyType>
+void btree<keyType>::setC(int i, btree* t) { child[i] = t; }
+
+template<typename keyType>
 void btree<keyType>::show() {	//show the nodes in the order of floor
-	int i, j, n;
-	vector<btree*> store;
-	store.push_back(this);
-	n = 1;
-	do {
-		for (i = 0; i < n; i++) {
-			for (j = 0; j < store[i]->key_n; j++)
-				cout << store[i]->key[j] << " ";
-			if (store[i]->leaf == false)
-				for (j = 0; j <= store[i]->key_n; j++)
-					store.push_back(store[i]->child[j]);
-			store.erase(store.begin());
+	for (int i = 0; i < key_n; i++)
+		cout << key[i] << " ";
+	if (!leaf)
+		for (int i = 0; i <= key_n; i++)
+			child[i]->show();
+}
+
+template<typename keyType>
+void btree<keyType>::clear() {	//show the nodes in the order of floor
+	if (!leaf)
+		for (int i = 0; i <= key_n; i++) {
+			child[i]->clear();
+			delete child[i];
 		}
-		cout << endl;
-		n = store.size();
-	} while (n);
 }

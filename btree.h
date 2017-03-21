@@ -23,11 +23,20 @@ private:
 public:
 	btree();
 	void setRoot();
-	bool search(btree* x, keyType k);
+	bool search(keyType k);
 	void split(btree* x, int i);
 	void insertNon(btree* x, keyType k);
-	void insert(btree* root, keyType k);
+	void insert(btree*& root, keyType k);
 	void del(btree* x, keyType key);
+	int getN();
+	bool getL();
+	keyType getK(int i);
+	btree* getC(int i);
+	void setN(int n);
+	void setL(bool b);
+	void setK(int i, int n);
+	void setC(int i, btree* t);
 	void show();
+	void clear();
 };
 #endif
