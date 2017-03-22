@@ -82,6 +82,11 @@ void btree<keyType>::insert(btree*& root, keyType k) {	//insert the k after spli
 }
 
 template<typename keyType>
+void btree<keyType>::merge(btree* x, int i, int j) {
+	;
+}
+
+template<typename keyType>
 void btree<keyType>::del(btree* x, keyType key) {
 	;
 }
@@ -112,8 +117,10 @@ void btree<keyType>::setC(int i, btree* t) { child[i] = t; }
 
 template<typename keyType>
 void btree<keyType>::show() {	//show the nodes in the order of floor
+	cout << "(";
 	for (int i = 0; i < key_n; i++)
 		cout << key[i] << " ";
+	cout << ")";
 	if (!leaf)
 		for (int i = 0; i <= key_n; i++)
 			child[i]->show();

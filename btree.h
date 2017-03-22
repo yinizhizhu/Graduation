@@ -27,6 +27,7 @@ public:
 	void split(btree* x, int i);
 	void insertNon(btree* x, keyType k);
 	void insert(btree*& root, keyType k);
+	void merge(btree* x, int i, int j);
 	void del(btree* x, keyType key);
 	int getN();
 	bool getL();

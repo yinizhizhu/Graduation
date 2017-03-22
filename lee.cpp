@@ -21,12 +21,12 @@ int main() {
 
 	btree<int>* root = new btree<int>();
 	root->setRoot();
-	for (int i = 0; i < 2 * DEGREE; i++) {
+	for (int i = 0; i < 9 * DEGREE; i++) {
 		root->insert(root, i);
 		root->show();
 		cout << endl;
 	}
-	for (int i = 0; i < 3 * DEGREE; i++) {
+	for (int i = 0; i < 4 * DEGREE; i++) {
 		if (root->search(i))
 			cout << i << " : yes" << endl;
 		else
