@@ -36,7 +36,9 @@ int main() {
 	root->show();
 	cout << endl;
 	delete root;
+
 	//batree b;
 	//b.show();
+
 	return 0;
 }

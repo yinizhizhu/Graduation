@@ -82,13 +82,144 @@ void btree<keyType>::insert(btree*& root, keyType k) {	//insert the k after spli
 }
 
 template<typename keyType>
-void btree<keyType>::merge(btree* x, int i, int j) {
-	;
+void btree<keyType>::merge(btree* x, int i, btree* y, btree* z) {
+	y->setN(2 * DEGREE - 1);
+	for (int j = DEGREE; j < 2 * DEGREE - 1; j++)
+		y->setK(j, z->getK(j - DEGREE));
+	y->setK(DEGREE - 1, x->getK(i));
+	if (y->getL() == false)
+		for (int j = DEGREE; j < 2 * DEGREE - 1; j++)
+			y->setC(j, z->getC(j - DEGREE));
+	for (int j = i; j + 1 < x->getN(); j++)
+		x->setC(j, x->getC(j + 1));
+	x->setN(x->getN() - 1);
+	delete z;
 }
 
 template<typename keyType>
-void btree<keyType>::del(btree* x, keyType key) {
-	;
+void btree<keyType>::del(btree*& root, keyType k) {
+	btree* r = root;
+	if (r->getN() == 1) {
+		btree* y = root->getC(0);
+		btree* z = root->getC(1);
+		if (y->getN() == z->getN() && z->getN == DEGREE - 1) {
+			merge(r, 0, y, z);
+			root = y;
+			delete r;
+			delNon(y, k);
+		}
+		else delNon(r, k);
+	}
+	else delNon(r, k);
+}
+
+template<typename keyType>
+void btree<keyType>::delNon(btree* x, keyType k) {
+	int i = 0;
+	while (i < x->getN() && k > x->getK(i)) i++;
+	if (x->getL()) {
+		if (k == x->getK(i)) {
+			for (int j = i; j < x->getN(); j++)
+				x->setK(j - 1, x->getK(j));
+			x->setN(x->getN() - 1);
+		}
+		else cout << "The key does not exist!" << endl;
+	}
+	else {
+		keyType ans;
+		btree* z = NULL, *y = x->getC(i);
+		if (i < x->getN())
+			z = x->getC(i + 1);
+		if (k == x->getK(i)) {
+			if (y->getN() >= DEGREE) {
+				ans = searchPre(y);
+				delNon(z, ans);
+				x->setK(i, ans);
+			}
+			else if (y->getN(z) >= DEGREE) {
+				ans = searchSuc(z);
+				delNon(z, ans);
+				x->setK(i, ans);
+			}
+			else {
+				merge(x, i, y, z);
+				delNon(y, ans);
+			}
+		}
+		else {
+			btree* p = NULL;
+			if (i > 0) p = x->getC(i - 1);
+			if (y->getN() == DEGREE - 1) {
+				if (i > 0 && p->getN() >= DEGREE)
+					shiftTOR(x, i, p, y);
+				else if (i < x->getN() && z->getN() >= DEGREE - 1)
+					shiftTOL(x, i, y, z);
+				else if (i >= 1) merge(x, i, p, y);
+				else merge(x, i, y, z);
+				delNon(y, k);
+			}
+		}
+	}
+}
+
+template<typename keyType>
+keyType btree<keyType>::searchPre(btree* y) {
+	btree* x = y;
+	int i = x->getN() - 1;
+	while (!x->getL()) {
+		x = x->getC(i + 1);
+		i = x->getN() - 1;
+	}
+	return x->getK(i);
+}
+
+template<typename keyType>
+keyType btree<keyType>::searchSuc(btree* z) {
+	btree* x = z;
+	while (!x->getL()) x = x->getC(0);
+	return x->getK(0);
+}
+
+template<typename keyType>
+void btree<keyType>::shiftToR(btree* x, int i, btree* y, btree* z) {
+	int j = z->getN();
+	z->setN(j + 1);
+	while (j >= 0) {
+		z->setK(j, z->getK(j - 1));
+		j--;
+	}
+	z->setK(0, x->getK(i));
+	x->setK(i, y->getK(y->getN() - 1));
+	if (!z->getL()) {
+		j = z->getN() - 1;
+		while (j >= 0) {
+			z->setC(j + 1, z->getC(j));
+			j--;
+		}
+		z->setC(0, y->getC(y->getN() - 1));//
+	}
+	y->setN(y->getN() - 1);
+}
+
+template<typename keyType>
+void btree<keyType>::shiftToL(btree* x, int i, btree* y, btree* z) {
+	int j = y->getN();
+	y->setN(j + 1);
+	y->setK(j, x->getK(i));
+	z->setN(z->getN() - 1);
+	j = 1;
+	while (j < z->getN()) {
+		z->setK(j - 1, z->getK(j));
+		j++;
+	}
+	if (!z->getL()) {
+		y->setC(y->getN() - 1, z->getC(0));
+		j = 1;
+		while (j < z->getN()) {
+			z->getC(j - 1, z->getC(j));
+			j++;
+		}
+	}
 }
 
 template<typename keyType>

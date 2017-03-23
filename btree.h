@@ -27,8 +27,13 @@ public:
 	void split(btree* x, int i);
 	void insertNon(btree* x, keyType k);
 	void insert(btree*& root, keyType k);
-	void merge(btree* x, int i, int j);
-	void del(btree* x, keyType key);
+	void merge(btree* x, int i, btree* y, btree* z);
+	void del(btree*& root, keyType k);
+	void delNon(btree* x, keyType k);
+	keyType searchPre(btree* y);
+	keyType searchSuc(btree* z);
+	void shiftToR(btree* x, int i, btree* y, btree* z);
+	void shiftToL(btree* x, int i, btree* y, btree* z);
 	int getN();
 	bool getL();
 	keyType getK(int i);
