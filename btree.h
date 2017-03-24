@@ -32,8 +32,8 @@ public:
 	void delNon(btree* x, keyType k);
 	keyType searchPre(btree* y);
 	keyType searchSuc(btree* z);
-	void shiftToR(btree* x, int i, btree* y, btree* z);
-	void shiftToL(btree* x, int i, btree* y, btree* z);
+	void shiftRTL(btree* x, int i, btree* y, btree* z);
+	void shiftLTR(btree* x, int i, btree* y, btree* z);
 	int getN();
 	bool getL();
 	keyType getK(int i);

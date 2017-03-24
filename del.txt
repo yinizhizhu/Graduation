@@ -1,0 +1,128 @@
+B-TREE-MERGE-CHILD(x, i, y,z)
+1 n[y] ← 2t -1
+2 for j ← t +1 to 2t -1
+3   do keyj[y] ← keyj-t[z]
+4 keyt[y] ← keyi[x]
+5 if not leaf[y]
+6  then for j ← t +1 to 2t
+7        do cj[y] ← cj-t[z]
+8 for j ← i +1 to n[x]
+9  do cj[x] ← cj+1[x]
+10 n[x] ← n[x] -1
+11 FREE-NODE(z)
+12 DISK-WRITE(y)
+13 DISK-WRITE(z)
+14 DISK-WRITE(x)
+
+B-TREE-DELETE(T,k)
+1  r ← root[T]
+ 2  if n[r] = 1
+ 3    then DISK_READ(c1[r])
+ 4       DISK_READ(c2[r])
+ 5       y ←c1[r]
+ 6       z ←c2[r]
+ 7       if n[y] = n[z] = t-1                   ▹ Cases 2c or 3b
+ 8         then  B-TREE-MERGE-CHILD(r, 1, y, z) 
+ 9            root[T] ← y
+ 10           FREE-NODE(r)
+ 11           B-TREE-DELETE-NONONE(y, k)
+12      else B-TREE-DELETE-NONONE (r, k)
+13 else B-TREE-DELETE-NONONE (r, k)
+
+B-TREE-DELETE-NONONE (x, k)
+1  i ← 1
+ 2  if leaf[x]                                       ▹ Cases 1
+ 3     then while i <= n[x] and k > keyi[x]
+ 4            do i ← i + 1
+ 5               if k = keyi[x]
+ 6                 then for j ← i+1 to n[x]
+ 7                        do keyj-1[x] ←keyj[x]
+ 8                      n[x] ← n[x] - 1
+ 9                      DISK-WRITE(x)
+ 10              else error:”the key does not exist”
+ 11    else while i <= n[x] and k > keyi[x]
+12           do i ← i + 1
+ 13              DISK-READ(ci[x])
+ 14              y ←ci[x]
+ 15              if i <= n[x]
+ 16                then DISK-READ(ci+1[x])
+ 17                     z ←ci+1[x]
+ 18              if k = keyi[x]                          ▹ Cases 2
+19                then if n[y] > t-1                   ▹ Cases 2a
+ 20                       then k′←B-TREE-SEARCH-PREDECESSOR(y)
+ 21                            B-TREE-DELETE-NONONE (y, k′)
+ 22                            keyi[x] ←k′
+ 23                     else if n[z] > t-1               ▹ Cases 2b
+ 24                       then k′←B-TREE-SEARCH-SUCCESSOR (z)
+ 25                            B-TREE-DELETE-NONONE (z, k′)
+ 26                            keyi[x] ←k′
+ 27                     else B-TREE-MERGE-CHILD(x, i, y, z)▹ Cases 2c
+ 28                          B-TREE-DELETE-NONONE (y, k)
+ 29              else                                   ▹ Cases 3
+ 30                if i >1
+ 31                  then DISK-READ(ci-1[x])
+ 32                       p ←ci-1[x]
+ 33                if n[y] = t-1 
+ 34                  then if i>1 and n[p] >t-1               ▹ Cases 3a
+ 35                         then B-TREE-SHIFT-TO-RIGHT-CHILD(x,i,p,y)
+ 36                       else if i <= n[x] and n[z] > t-1    ▹ Cases 3a
+ 37                         then B-TREE-SHIFT-TO-LEFT-CHILD(x,i,y,z)
+ 38                       else if i>1                       ▹ Cases 3b
+ 39                         then B-TREE-MERGE-CHILD(x, i, p, y)  
+ 40                              y ← p
+ 41                       else B-TREE-MERGE-CHILD(x, i, y, z)▹ Cases 3b
+ 42                B-TREE-DELETE-NONONE (y, k)
+
+B-TREE-SEARCH-PREDECESSOR(y)
+1  x ← y
+2  i ← n[x]
+3  while not leaf[x]
+4    do DISK_READ(ci+1[x])
+5       x ←ci+1[x]
+6       i ← n[x]
+7  return keyi[x]
+
+B-TREE-SEARCH-SUCCESSOR (z)
+1  x ← z
+2  while not leaf[x]
+3    do DISK_READ(c1[x])
+4       x ←c1[x]
+5  return key1[x]
+
+B-TREE-SHIFT-TO-RIGHT-CHILD(x,i,y,z)
+1 n[z] ← n[z] +1
+2 j ← n[z]
+3 while j > 1
+4   do keyj[z] ←keyj-1[z]
+5      j ← j -1
+6 key1[z] ←keyi[x]
+7 keyi[x] ←keyn[y][y]
+8 if not leaf[z]
+9   then j ← n[z]
+10       while j > 0
+11         do cj+1[z] ←cj[z]
+12            j ← j -1
+13       c1[z] ←cn[y]+1[y]
+14 n[y] ← n[y] -1
+15 DISK-WRITE(y)
+16 DISK-WRITE(z)
+17 DISK-WRITE(x)
+
+B-TREE-SHIFT-TO-LEFT-CHILD(x,i,y,z)
+1 n[y] ← n[y] +1
+2 keyn[y][y] ← keyi[x]
+3 keyi[x] ←key1[z]
+4 n[z] ← n[z] -1
+5 j ← 1
+6 while j <= n[z]
+7   do keyj[z] ←keyj+1[z]
+8      j ← j +1
+9 if not leaf[z]
+10  then cn[y]+1[y] ←c1[z]
+11       j ← 1
+12       while j <= n[z]+1
+13         do cj[z] ←cj+1[z]
+14            j ← j + 1
+15 DISK-WRITE(y)
+16 DISK-WRITE(z)
+17 DISK-WRITE(x)
