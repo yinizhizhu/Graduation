@@ -40,8 +40,8 @@ void btree<keyType>::split(btree* x, int i) {	//split the node
 		x->setK(j + 1, x->getK(j));
 	x->setK(i, y->getK(DEGREE - 1));
 	x->setN(x->getN() + 1);
-	x->show();//test
-	cout << endl;//test
+	//x->show(0);//test
+	//cout << endl;//test
 }
 
 template<typename keyType>
@@ -92,7 +92,7 @@ void btree<keyType>::merge(btree* x, int i, btree* y, btree* z) {
 	if (!y->getL())
 		for (j = DEGREE; j < 2 * DEGREE; j++)
 			y->setC(j, z->getC(j - DEGREE));
-	for (j = i + 1; j < x->getN() - 1; j++) {
+	for (j = i + 1; j < x->getN(); j++) {
 		x->setK(j - 1, x->getK(j));
 		x->setC(j, x->getC(j + 1));
 	}
@@ -121,53 +121,50 @@ template<typename keyType>
 void btree<keyType>::delNon(btree* x, keyType k) {
 	int i = 0;
 	while (i < x->getN() && k > x->getK(i)) i++;
-	if (x->getL()) {
+	if (x->getL()) {//Reach the leaf node
 		if (k == x->getK(i)) {
 			for (int j = i + 1; j < x->getN(); j++)
 				x->setK(j - 1, x->getK(j));
 			x->setN(x->getN() - 1);
 		}
 		else cout << "The key does not exist!" << endl;
+		return;
+	}
+	// the iner node
+	keyType ans;
+	btree* z = NULL, *y = x->getC(i);
+	if (i < x->getN()) z = x->getC(i + 1);
+	if (k == x->getK(i)) {
+		if (y->getN() >= DEGREE) {//get the key from the left node
+			ans = searchPre(y);
+			delNon(y, ans);
+			x->setK(i, ans);
+		}
+		else if (z->getN() >= DEGREE) {//get the key from the right node
+			ans = searchSuc(z);
+			delNon(z, ans);
+			x->setK(i, ans);
+		}
+		else {//merge the y, k, z
+			merge(x, i, y, z);
+			delNon(y, k);
+		}
 	}
 	else {
-		keyType ans;
-		btree* z = NULL, *y = x->getC(i);
-		if (i < x->getN()) {
-			z = x->getC(i + 1);
-			if (k == x->getK(i)) {
-				if (y->getN() >= DEGREE) {
-					ans = searchPre(y);
-					delNon(z, ans);
-					x->setK(i, ans);
-				}
-				else if (z->getN() >= DEGREE) {
-					ans = searchSuc(z);
-					delNon(z, ans);
-					x->setK(i, ans);
-				}
-				else {
-					merge(x, i, y, z);
-					delNon(y, ans);
-				}
+		btree* p = NULL;
+		if (i > 0) p = x->getC(i - 1);
+		if (y->getN() == DEGREE - 1) {
+			if (i > 0 && p->getN() >= DEGREE)//Get: try the left side
+				shiftRTL(x, i - 1, p, y);
+			else if (i < x->getN() && z->getN() >= DEGREE)//Get: try the right side
+				shiftLTR(x, i, y, z);
+			else if (i > 0) {//Merge: try the left side
+				merge(x, i - 1, p, y);
+				y = p;
 			}
-			else {
-				btree* p = NULL;
-				if (i > 0) p = x->getC(i - 1);
-				if (y->getN() == DEGREE - 1) {
-					if (i > 0 && p->getN() >= DEGREE)
-						shiftRTL(x, i, p, y);
-					else if (i < x->getN() && z->getN() >= DEGREE - 1)
-						shiftLTR(x, i, y, z);
-					else if (i >= 1) {
-						merge(x, i, p, y);
-						y = p;
-					}
-					else merge(x, i, y, z);
-					delNon(y, k);
-				}
-			}
+			else merge(x, i, y, z);//Merge: try the right side
 		}
-		else delNon(y, k);
+		delNon(y, k);
 	}
 }
 
@@ -190,8 +187,7 @@ template<typename keyType>
 void btree<keyType>::shiftRTL(btree* x, int i, btree* y, btree* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
 	int j = z->getN();
-	z->setN(j + 1);
-	for (; j >= 0; j--)
+	for (; j > 0; j--)
 		z->setK(j, z->getK(j - 1));
 	z->setK(0, x->getK(i));
 	x->setK(i, y->getK(y->getN() - 1));
@@ -200,22 +196,23 @@ void btree<keyType>::shiftRTL(btree* x, int i, btree* y, btree* z) {
 			z->setC(j + 1, z->getC(j));
 		z->setC(0, y->getC(y->getN()));
 	}
+	z->setN(z->getN() + 1);
 	y->setN(y->getN() - 1);
 }
 
 template<typename keyType>
 void btree<keyType>::shiftLTR(btree* x, int i, btree* y, btree* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
-	int j = y->getN();
-	y->setN(j + 1);
-	y->setK(j, x->getK(i));
-	for (j = 1; j < z->getN(); j++)
-		z->setK(j - 1, z->getK(j));
-	if (!z->getL()) {
-		y->setC(y->getN(), z->getC(0));
-		for (j = 1; j <= z->getN(); j++)
-			z->getC(j - 1, z->getC(j));
-	}
+	int n = y->getN();
+	y->setK(n, x->getK(i));
+	x->setK(i, z->getK(0));
+	for (int k = 1; k < z->getN(); k++)
+		z->setK(k - 1, z->getK(k));
+	y->setC(n + 1, z->getC(0));
+	if (!z->getL())
+		for (int k = 1; k <= z->getN(); k++)
+			z->setC(k - 1, z->getC(k));
+	y->setN(n + 1);
 	z->setN(z->getN() - 1);
 }
 
@@ -244,14 +241,16 @@ template<typename keyType>
 void btree<keyType>::setC(int i, btree* t) { child[i] = t; }
 
 template<typename keyType>
-void btree<keyType>::show() {	//show the nodes in the order of floor
-	cout << "(";
+void btree<keyType>::show(int d) {	//show the nodes in the order of floor
+	for (int i = 0; i < d; i++) cout << "   ";
+	if (d) cout << "->";
+	cout << "(" << key_n << ": ";
 	for (int i = 0; i < key_n; i++)
 		cout << key[i] << " ";
-	cout << ")";
+	cout << ")" << endl;
 	if (!leaf)
 		for (int i = 0; i <= key_n; i++)
-			child[i]->show();
+			child[i]->show(d + 1);
 }
 
 template<typename keyType>
@@ -259,6 +258,7 @@ void btree<keyType>::clear() {	//show the nodes in the order of floor
 	if (!leaf)
 		for (int i = 0; i <= key_n; i++) {
 			child[i]->clear();
+			leaf = true;
 			delete child[i];
 		}
 }

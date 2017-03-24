@@ -11,15 +11,15 @@
 
 using namespace std;
 
-#define DEGREE 4
+#define DEGREE 3
 
 template<typename keyType>
 class btree {
 private:
-	bool leaf;
-	int key_n;
-	keyType key[2 * DEGREE - 1];
-	btree* child[2 * DEGREE];
+	bool	leaf;
+	int		key_n;
+	keyType	key[2 * DEGREE - 1];
+	btree*	child[2 * DEGREE];
 public:
 	btree();
 	void setRoot();
@@ -42,7 +42,7 @@ public:
 	void setL(bool b);
 	void setK(int i, int n);
 	void setC(int i, btree* t);
-	void show();
+	void show(int d);
 	void clear();
 };
 #endif
