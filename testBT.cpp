@@ -1,20 +1,20 @@
-#include "batree.cpp"
+#include "btree.cpp"
 
-void show(batree<int>& r) {
+void show(btree<int>& r) {
 	r.show();
 	cout << endl;
 }
 
-void testInsert(batree<int>& r, int n) {
+void testInsert(btree<int>& r, int n) {
 	for (int i = 0; i < n; i++) {
-		cout << "Insert " << i << ":" << endl;
+		//cout << "Insert " << i << ":" << endl;
 		r.insert(i);
-		show(r);
+		//show();
 	}
 	show(r);
 }
 
-void testSearch(batree<int>& r, int n) {
+void testSearch(btree<int>& r, int n) {
 	for (int i = 0; i < n; i++) {
 		cout << "Search " << i;
 		if (r.search(i))
@@ -25,7 +25,7 @@ void testSearch(batree<int>& r, int n) {
 	r.show();
 }
 
-void testDel(batree<int>& r, int n) {
+void testDel(btree<int>& r, int n) {
 	r.del(100);//test the case of not exsiting
 	char c;
 	for (int i = 0; i < n; i++) {
@@ -38,23 +38,15 @@ void testDel(batree<int>& r, int n) {
 	}
 }
 
-void clear(batree<int>& r) {
+void clear(btree<int>& r) {
 	r.clear();
 	r.show();
 }
 
-int main() {
-	batree<int> r;
+void testBt() {
+	btree<int> r;
 	testInsert(r, 5 * DEGREE);
 	testSearch(r, 6 * DEGREE);
-	int n, tmp;
-	cout << "The number of test cases: ";
-	cin >> n;
-	for (; n; n--) {
-		cin >> tmp;
-		r.del(tmp);
-		r.show();
-	}
+	testDel(r, 5 * DEGREE);
 	clear(r);
-	return 0;
 }

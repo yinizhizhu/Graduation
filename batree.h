@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BTREE_H
-#define BTREE_H
+#ifndef BATREE_H
+#define BATREE_H
 #include <iostream>
 
 using namespace std;
@@ -8,7 +8,7 @@ using namespace std;
 #define DEGREE 3
 
 template<typename keyType>
-class btree {
+class batree {
 private:
 	struct node {
 		bool	leaf;
@@ -32,8 +32,8 @@ private:
 	};
 	node* root;
 public:
-	btree();
-	~btree();
+	batree();
+	~batree();
 	bool search(keyType k);
 	void split(node* x, int i);
 	void insertNon(node* x, keyType k);
@@ -41,8 +41,6 @@ public:
 	void merge(node* x, int i, node* y, node* z);
 	void del(keyType k);
 	void delNon(node* x, keyType k);
-	keyType searchPre(node* y);
-	keyType searchSuc(node* z);
 	void shiftRTL(node* x, int i, node* y, node* z);
 	void shiftLTR(node* x, int i, node* y, node* z);
 	void doShow(node* root, int d);
