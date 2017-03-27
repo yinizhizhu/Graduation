@@ -2,27 +2,31 @@
 
 template<typename keyType>
 btree<keyType>::btree() {	//initial
-	for (int i = 2 * DEGREE - 1; i >= 0; i--)
-		child[i] = NULL;
-	leaf = false;
-	key_n = 0;
+	root = new node();
+	root->setL(true);
 }
 
 template<typename keyType>
-void btree<keyType>::setRoot() { leaf = true; }
+btree<keyType>::~btree() {	//initial
+	delete root;
+}
 
 template<typename keyType>
 bool btree<keyType>::search(keyType k) {	//check
-	int i = 0;
-	while (i < key_n && k > key[i]) i++;
-	if (i < key_n && k == key[i]) return true;
-	else if (leaf) return false;
-	return child[i]->search(k);
+	node* tmp = root;
+	while (tmp) {
+		int i = 0;
+		while (i < tmp->getN() && k > tmp->getK(i)) i++;
+		if (i < tmp->getN() && k == tmp->getK(i)) return true;
+		else if (tmp->getL()) return false;
+		tmp = tmp->getC(i);
+	}
+	return false;
 }
 
 template<typename keyType>
-void btree<keyType>::split(btree* x, int i) {	//split the node
-	btree* z = new btree(), *y = x->getC(i);
+void btree<keyType>::split(node* x, int i) {	//split the node
+	node* z = new node(), *y = x->getC(i);
 	z->setL(y->getL());
 	z->setN(DEGREE - 1);
 	for (int j = 0; j < DEGREE - 1; j++)
@@ -45,7 +49,7 @@ void btree<keyType>::split(btree* x, int i) {	//split the node
 }
 
 template<typename keyType>
-void btree<keyType>::insertNon(btree* x, keyType k) {	//while NonFull
+void btree<keyType>::insertNon(node* x, keyType k) {	//while NonFull
 	int i = x->getN() - 1;
 	if (x->leaf) {
 		while (i >= 0 && k < x->getK(i)) {
@@ -67,10 +71,10 @@ void btree<keyType>::insertNon(btree* x, keyType k) {	//while NonFull
 }
 
 template<typename keyType>
-void btree<keyType>::insert(btree*& root, keyType k) {	//insert the k after spliting
-	btree* r = root;
+void btree<keyType>::insert(keyType k) {	//insert the k after spliting
+	node* r = root;
 	if (2 * DEGREE - 1 == r->getN()) {
-		btree* s = new btree();
+		node* s = new node();
 		root = s;
 		s->setN(0);
 		s->setL(false);
@@ -82,7 +86,7 @@ void btree<keyType>::insert(btree*& root, keyType k) {	//insert the k after spli
 }
 
 template<typename keyType>
-void btree<keyType>::merge(btree* x, int i, btree* y, btree* z) {
+void btree<keyType>::merge(node* x, int i, node* y, node* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
 	int j = DEGREE;
 	y->setN(2 * DEGREE - 1);
@@ -101,11 +105,11 @@ void btree<keyType>::merge(btree* x, int i, btree* y, btree* z) {
 }
 
 template<typename keyType>
-void btree<keyType>::del(btree*& root, keyType k) {
-	btree* r = root;
+void btree<keyType>::del(keyType k) {
+	node* r = root;
 	if (r->getN() == 1 && !r->getL()) {
-		btree* y = root->getC(0);
-		btree* z = root->getC(1);
+		node* y = root->getC(0);
+		node* z = root->getC(1);
 		if (y->getN() == z->getN() && z->getN() == DEGREE - 1) {
 			merge(r, 0, y, z);
 			root = y;
@@ -118,7 +122,7 @@ void btree<keyType>::del(btree*& root, keyType k) {
 }
 
 template<typename keyType>
-void btree<keyType>::delNon(btree* x, keyType k) {
+void btree<keyType>::delNon(node* x, keyType k) {
 	int i = 0;
 	while (i < x->getN() && k > x->getK(i)) i++;
 	if (x->getL()) {//Reach the leaf node
@@ -132,7 +136,7 @@ void btree<keyType>::delNon(btree* x, keyType k) {
 	}
 	// the iner node
 	keyType ans;
-	btree* z = NULL, *y = x->getC(i);
+	node* z = NULL, *y = x->getC(i);
 	if (i < x->getN()) z = x->getC(i + 1);
 	if (k == x->getK(i)) {
 		if (y->getN() >= DEGREE) {//get the key from the left node
@@ -151,7 +155,7 @@ void btree<keyType>::delNon(btree* x, keyType k) {
 		}
 	}
 	else {
-		btree* p = NULL;
+		node* p = NULL;
 		if (i > 0) p = x->getC(i - 1);
 		if (y->getN() == DEGREE - 1) {
 			if (i > 0 && p->getN() >= DEGREE)//Get: try the left side
@@ -169,22 +173,22 @@ void btree<keyType>::delNon(btree* x, keyType k) {
 }
 
 template<typename keyType>
-keyType btree<keyType>::searchPre(btree* y) {
-	btree* x = y;
+keyType btree<keyType>::searchPre(node* y) {
+	node* x = y;
 	while (!x->getL())
 		x = x->getC(x->getN());
 	return x->getK(x->getN() - 1);
 }
 
 template<typename keyType>
-keyType btree<keyType>::searchSuc(btree* z) {
-	btree* x = z;
+keyType btree<keyType>::searchSuc(node* z) {
+	node* x = z;
 	while (!x->getL()) x = x->getC(0);
 	return x->getK(0);
 }
 
 template<typename keyType>
-void btree<keyType>::shiftRTL(btree* x, int i, btree* y, btree* z) {
+void btree<keyType>::shiftRTL(node* x, int i, node* y, node* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
 	int j = z->getN();
 	for (; j > 0; j--)
@@ -201,7 +205,7 @@ void btree<keyType>::shiftRTL(btree* x, int i, btree* y, btree* z) {
 }
 
 template<typename keyType>
-void btree<keyType>::shiftLTR(btree* x, int i, btree* y, btree* z) {
+void btree<keyType>::shiftLTR(node* x, int i, node* y, node* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
 	int n = y->getN();
 	y->setK(n, x->getK(i));
@@ -217,48 +221,35 @@ void btree<keyType>::shiftLTR(btree* x, int i, btree* y, btree* z) {
 }
 
 template<typename keyType>
-int btree<keyType>::getN() { return key_n; }
-
-template<typename keyType>
-bool btree<keyType>::getL() { return leaf; }
-
-template<typename keyType>
-keyType btree<keyType>::getK(int i) { return key[i]; }
-
-template<typename keyType>
-btree<keyType>* btree<keyType>::getC(int i) { return child[i]; }
-
-template<typename keyType>
-void btree<keyType>::setN(int n) { key_n = n; }
-
-template<typename keyType>
-void btree<keyType>::setL(bool b) { leaf = b; }
-
-template<typename keyType>
-void btree<keyType>::setK(int i, int n) { key[i] = n; }
-
-template<typename keyType>
-void btree<keyType>::setC(int i, btree* t) { child[i] = t; }
-
-template<typename keyType>
-void btree<keyType>::show(int d) {	//show the nodes in the order of floor
+void btree<keyType>::doShow(node* root, int d) {	//show the nodes in the order of floor
+	node* tmp = root;
 	for (int i = 0; i < d; i++) cout << "   ";
 	if (d) cout << "->";
-	cout << "(" << key_n << ": ";
-	for (int i = 0; i < key_n; i++)
-		cout << key[i] << " ";
+	cout << "(" << tmp->getN() << ": ";
+	for (int i = 0; i < tmp->getN(); i++)
+		cout << tmp->getK(i) << " ";
 	cout << ")" << endl;
-	if (!leaf)
-		for (int i = 0; i <= key_n; i++)
-			child[i]->show(d + 1);
+	if (!tmp->getL())
+		for (int i = 0; i <= tmp->getN(); i++)
+			doShow(tmp->getC(i), d + 1);
 }
 
 template<typename keyType>
-void btree<keyType>::clear() {	//show the nodes in the order of floor
-	if (!leaf)
-		for (int i = 0; i <= key_n; i++) {
-			child[i]->clear();
-			leaf = true;
-			delete child[i];
+void btree<keyType>::show() {
+	doShow(root, 0);
+}
+
+template<typename keyType>
+void btree<keyType>::doClear(node* root) {	//show the nodes in the order of floor
+	if (!root->getL())
+		for (int i = 0; i <= root->getN(); i++) {
+			doClear(root->getC(i));
+			root->setL(true);
+			delete root->getC(i);
 		}
+}
+
+template<typename keyType>
+void btree<keyType>::clear() {
+	doClear(root);
 }

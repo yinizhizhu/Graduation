@@ -16,33 +16,44 @@ using namespace std;
 template<typename keyType>
 class btree {
 private:
-	bool	leaf;
-	int		key_n;
-	keyType	key[2 * DEGREE - 1];
-	btree*	child[2 * DEGREE];
+	struct node {
+		bool	leaf;
+		int		key_n;
+		keyType	key[2 * DEGREE - 1];
+		node*	child[2 * DEGREE];
+		node() {
+			for (int i = 2 * DEGREE - 1; i >= 0; i--)
+				child[i] = NULL;
+			leaf = false;
+			key_n = 0;
+		}
+		int getN() { return key_n; }
+		bool getL() { return leaf; }
+		keyType getK(int i) { return key[i]; }
+		node* getC(int i) { return child[i]; }
+		void setN(int n) { key_n = n; }
+		void setL(bool b) { leaf = b; }
+		void setK(int i, int n) { key[i] = n; }
+		void setC(int i, node* t) { child[i] = t; }
+	};
+	node* root;
 public:
 	btree();
-	void setRoot();
+	~btree();
 	bool search(keyType k);
-	void split(btree* x, int i);
-	void insertNon(btree* x, keyType k);
-	void insert(btree*& root, keyType k);
-	void merge(btree* x, int i, btree* y, btree* z);
-	void del(btree*& root, keyType k);
-	void delNon(btree* x, keyType k);
-	keyType searchPre(btree* y);
-	keyType searchSuc(btree* z);
-	void shiftRTL(btree* x, int i, btree* y, btree* z);
-	void shiftLTR(btree* x, int i, btree* y, btree* z);
-	int getN();
-	bool getL();
-	keyType getK(int i);
-	btree* getC(int i);
-	void setN(int n);
-	void setL(bool b);
-	void setK(int i, int n);
-	void setC(int i, btree* t);
-	void show(int d);
+	void split(node* x, int i);
+	void insertNon(node* x, keyType k);
+	void insert(keyType k);
+	void merge(node* x, int i, node* y, node* z);
+	void del(keyType k);
+	void delNon(node* x, keyType k);
+	keyType searchPre(node* y);
+	keyType searchSuc(node* z);
+	void shiftRTL(node* x, int i, node* y, node* z);
+	void shiftLTR(node* x, int i, node* y, node* z);
+	void doShow(node* root, int d);
+	void show();
+	void doClear(node* root);
 	void clear();
 };
 #endif
