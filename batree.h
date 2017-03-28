@@ -5,18 +5,18 @@
 
 using namespace std;
 
-#define DEGREE 3
+#define DEGREEA 3
 
 template<typename keyType>
 class batree {
 private:
 	struct node {
-		bool	leaf;
-		int		key_n;
-		keyType	key[2 * DEGREE - 1];
-		node*	child[2 * DEGREE];
+		bool	leaf;					//true while current node is leaf node, false for inner node
+		int		key_n;					//the number of the key
+		keyType	key[2 * DEGREEA - 1];	//store the key
+		node*	child[2 * DEGREEA];		//store the pointer of child
 		node() {
-			for (int i = 2 * DEGREE - 1; i >= 0; i--)
+			for (int i = 2 * DEGREEA - 1; i >= 0; i--)
 				child[i] = NULL;
 			leaf = false;
 			key_n = 0;
@@ -34,18 +34,19 @@ private:
 public:
 	batree();
 	~batree();
-	bool search(keyType k);
-	void split(node* x, int i);
-	void insertNon(node* x, keyType k);
-	void insert(keyType k);
-	void merge(node* x, int i, node* y, node* z);
-	void del(keyType k);
-	void delNon(node* x, keyType k);
-	void shiftRTL(node* x, int i, node* y, node* z);
-	void shiftLTR(node* x, int i, node* y, node* z);
+	bool search(keyType k);								//search k in root
+	void split(node* x, int i);							//split the child whose index is i of node x
+	void insertNon(node* x, keyType k);					//insert the k into the subtree whose root is node x
+	void insert(keyType k);								//insert the k into root
+	void merge(node* x, int i, node* y, node* z);		//merge node y, key i and node z, x is the parent of y and z
+	void del(keyType k);								//delete the k from root
+	void delNon(node* x, keyType k);					//delete the k from the subtree whose root is node x
+	void delSet(keyType k, keyType v);					//revalue the index while the head is changed
+	void shiftRTL(node* x, int i, node* y, node* z);	//x's right child y borrows a key and a child from x's left child of z
+	void shiftLTR(node* x, int i, node* y, node* z);	//...
 	void doShow(node* root, int d);
-	void show();
+	void show();										//API for showing the btrees
 	void doClear(node* root);
-	void clear();
+	void clear();										//API for free the sources we apply
 };
 #endif

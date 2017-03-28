@@ -45,8 +45,8 @@ void clear(batree<int>& r) {
 
 int main() {
 	batree<int> r;
-	testInsert(r, 5 * DEGREE);
-	testSearch(r, 6 * DEGREE);
+	testInsert(r, 9 * DEGREEA);
+	testSearch(r, 10 * DEGREEA);
 	int n, tmp;
 	cout << "The number of test cases: ";
 	cin >> n;
