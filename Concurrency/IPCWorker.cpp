@@ -13,9 +13,7 @@ typedef struct _tagCOMMUNICATIONOBJECT
 int main()
 {
 	HBRUSH hBrush = NULL;
-
 	hBrush = CreateSolidBrush(RGB(255, 0, 0));
-
 	HWND hWnd = NULL;
 	HDC hDC = NULL;
 	RECT rectClient = { 0 };
