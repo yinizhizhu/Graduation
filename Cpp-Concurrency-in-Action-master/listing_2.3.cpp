@@ -14,8 +14,8 @@ public:
             t.join();
         }
     }
-    thread_guard(thread_guard const&)=delete;
-    thread_guard& operator=(thread_guard const&)=delete;
+    thread_guard(thread_guard const&)=delete;//cannot copy
+    thread_guard& operator=(thread_guard const&)=delete;//cannot assign
 };
 
 void do_something(int& i)
