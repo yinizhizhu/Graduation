@@ -1,0 +1,127 @@
+GetCurrentThreadId()
+
+
+
+Windows API 使用 __stdcall 调用方式
+
+
+
+HANDLE handle = CreateThread(NULL,0,ThreadFun,NULL,NULL,NULL);
+HANDLE CreateThread(
+LPSECURITY_ATTRIBUTES lpThreadAttributes,//SD
+SIZE_T dwStackSize,//initialstacksize
+LPTHREAD_START_ROUTINE lpStartAddress,//threadfunction
+LPVOID lpParameter,//threadargument
+DWORD dwCreationFlags,//creationoption
+LPDWORD lpThreadId//threadidentifier
+)
+dwStackSize，设置初始栈的大小，以字节为单位，如果为0，那么默认将使用与调用该函数的线程相同的栈空间大小。任何情况下，Windows根据需要动态延长堆栈的大小。
+lpStartAddress，指向线程函数的指针，形式：@函数名，函数名称没有限制，但是必须以下列形式声明：
+DWORD WINAPI 函数名 (LPVOID lpParam) ，格式不正确将无法调用成功。
+//也可以直接调用void类型
+//但lpStartAddress要这样通过LPTHREAD_START_ROUTINE转换如： (LPTHREAD_START_ROUTINE)MyVoid
+//然后在线程声明为：
+void MyVoid()
+{
+return;
+}
+lpParameter：向线程函数传递的参数，是一个指向结构的指针，不需传递参数时，为NULL。
+dwCreationFlags ：线程标志,可取值如下
+（1）CREATE_SUSPENDED(0x00000004)：创建一个挂起的线程，
+（2）0：表示创建后立即激活。
+（3）STACK_SIZE_PARAM_IS_A_RESERVATION(0x00010000)：dwStackSize参数指定初始的保留堆栈 的大小，否则,dwStackSize指定提交的大小。该标记值在Windows 2000/NT and Windows Me/98/95上不支持。
+lpThreadId:保存新线程的id。
+返回值：函数成功，返回线程句柄；函数失败返回false。若不想返回线程ID,设置值为NULL。
+
+
+
+WaitForSingleObject(handle,INFINITE);
+DWORD WINAPI WaitForSingleObject(
+__in HANDLE hHandle,
+__in DWORD dwMilliseconds
+);
+hHandle[in]对象句柄。可以指定一系列的对象，如Event、Job、Memory resource notification、Mutex、Process、Semaphore、Thread、Waitable timer等。
+dwMilliseconds[in]定时时间间隔，单位为milliseconds（毫秒）.如果指定一个非零值，函数处于等待状态直到hHandle标记的对象被触发，或者时间到了。如果dwMilliseconds为0，对象没有被触发信号，函数不会进入一个等待状态，它总是立即返回。如果dwMilliseconds为INFINITE，对象被触发信号后，函数才会返回。
+
+
+
+handle[i] = (HANDLE)_beginthreadex(NULL, 0, ThreadFun, NULL, NULL, NULL);
+绝对不要调用系统自带的CreateThread函数创建新的线程，而应该使用_beginthreadex，除非你在线程中绝不使用需要tiddata结构的运行时库函数
+
+
+
+WaitForMultipleObjects(10, handle, TRUE, INFINITE);
+DWORD WaitForMultipleObjects(
+DWORD nCount,
+const HANDLE* lpHandles,
+BOOL bWaitAll,
+DWORD dwMilliseconds
+);
+
+
+
+有些变量是用volatile关键字声明的。当两个线程都要用到某一个变量且该变量的值会被改变时，应该用volatile声明，该关键字的作用是防止优化编译器把变量从内存装入CPU寄存器中。如果变量被装入寄存器，那么两个线程有可能一个使用内存中的变量，一个使用寄存器中的变量，这会造成程序的错误执行。volatile的意思是让编译器每次操作该变量时一定要从内存中真正取出，而不是使用已经存在寄存器中的值
+
+
+
+#define WINAPI __stdcall
+
+
+
+CRITICAL_SECTION g_csThreadParameter, g_csThreadCode;
+	InitializeCriticalSection(&g_csThreadParameter);
+	InitializeCriticalSection(&g_csThreadCode);
+		EnterCriticalSection(&g_csThreadParameter);//进入子线程序号关键区域
+		LeaveCriticalSection(&g_csThreadParameter);
+	DeleteCriticalSection(&g_csThreadCode);
+	
+	
+
+HANDLE g_hThreadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+HANDLE CreateEvent(
+LPSECURITY_ATTRIBUTES lpEventAttributes,// 安全属性
+BOOL bManualReset,// 复位方式
+BOOL bInitialState,// 初始状态
+LPCTSTR lpName // 对象名称
+);
+lpEventAttributes[输入]
+一个指向SECURITY_ATTRIBUTES结构的指针，确定返回的句柄是否可被子进程继承。如果lpEventAttributes是NULL，此句柄不能被继承。
+bManualReset[输入]
+指定将事件对象创建成手动复原还是自动复原。如果是TRUE，那么必须用ResetEvent函数来手工将事件的状态复原到无信号状态。如果设置为FALSE，当一个等待线程被释放以后，系统将会自动将事件状态复原为无信号状态。
+bInitialState[输入]
+指定事件对象的初始状态。如果为TRUE，初始状态为有信号状态；否则为无信号状态。
+lpName[输入]
+指定事件的对象的名称，是一个以0结束的字符串指针。名称的字符格式限定在MAX_PATH之内。名字是对大小写敏感的。
+如果lpName指定的名字，与一个存在的命名的事件对象的名称相同，函数将请求EVENT_ALL_ACCESS来访问存在的对象。这时候，由于bManualReset和bInitialState参数已经在创建事件的进程中设置，这两个参数将被忽略。如果lpEventAttributes是参数不是NULL，它将确定此句柄是否可以被继承，但是其安全描述符成员将被忽略。
+如果lpName为NULL，将创建一个无名的事件对象。
+如果lpName的和一个存在的信号、互斥、等待计时器、作业或者是文件映射对象名称相同，函数将会失败，在GetLastError函数中将返回ERROR_INVALID_HANDLE。造成这种现象的原因是这些对象共享同一个命名空间。
+
+
+
+HANDLE hMutex = CreateMutex(NULL, TRUE, (LPCWSTR)MUTEX_NAME);
+HANDLE CreateMutex(
+LPSECURITY_ATTRIBUTES lpMutexAttributes, // 指向安全属性的指针
+BOOL bInitialOwner, // 初始化互斥对象的所有者
+LPCTSTR lpName // 指向互斥对象名的指针
+);
+
+
+
+_getch();
+#include <conio.h>无回显的getchar()
+
+
+
+HANDLE OpenMutex(
+DWORD dwDesiredAccess, // access
+BOOL bInheritHandle, // inheritance option
+LPCTSTR lpName // object name
+);
+dwDesiredAccess：
+MUTEX_ALL_ACCESS 请求对互斥体的完全访问
+MUTEX_MODIFY_STATE 允许使用 ReleaseMutex 函数
+SYNCHRONIZE 允许互斥体对象同步使用
+bInheritHandle : 如希望子进程能够继承句柄，则为TRUE
+lpName ：要打开对象的名字
+返回值：如执行成功，返回对象的句柄；零表示失败。若想获得更多错误信息，请调用GetLastError函数。
+备注：一旦不再需要，注意一定要用 CloseHandle 关闭互斥体句柄。如对象的所有句柄都已关闭，那么对象也会删除

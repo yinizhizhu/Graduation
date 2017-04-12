@@ -12,29 +12,28 @@
 #include <process.h>
 
 long g_nNum; //全局资源
-unsigned int _stdcall Fun(void* pPM); //线程函数
+unsigned int WINAPI Fun(void* pPM); //线程函数
 const int THREAD_NUM = 10; //子线程数
 
 int main() {
 	g_nNum = 0;
 	HANDLE handle[THREAD_NUM];
-	
+
 	int i = 0;
-	while(i < THREAD_NUM) {
-		handle[i] = (HANDLE)_beginthreadex(NULL,0,Fun,&i,0,NULL);
-		i++;
-	}
-	WaitForMultipleObjects(THREAD_NUM,handle,TRUE,INFINITE);
+	for (; i < THREAD_NUM; i++)
+		handle[i] = (HANDLE)_beginthreadex(NULL, 0, Fun, &i, 0, NULL);
+
+	WaitForMultipleObjects(THREAD_NUM, handle, TRUE, INFINITE);
 	system("pause");
 	return 0;
 }
 
-unsigned int _stdcall Fun(void* pPM) {
+unsigned int WINAPI Fun(void* pPM) {
 	//由于创建线程需要一定的开销，所以新线程并不能第一时间执行到这
 	int nThreadNum = *(int*)pPM;
 	Sleep(50);
 	g_nNum++;
 	Sleep(0);
-	printf("线程编号为%d  全局资源值为%d\n",nThreadNum,g_nNum);
+	printf("线程编号为%d  全局资源值为%d\n", nThreadNum, g_nNum);
 	return 0;
 }

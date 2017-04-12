@@ -4,7 +4,7 @@
 
 HANDLE g_hThreadEvent;
 //快线程
-unsigned int _stdcall FastThreadFun(void* pPM) {
+unsigned int WINAPI FastThreadFun(void* pPM) {
 	Sleep(10);//用这个来保证各线程调用等待函数的次序有一定的随机性
 	printf("%s 启动\n", (PSTR)pPM);
 	WaitForSingleObject(g_hThreadEvent, INFINITE);
@@ -13,7 +13,7 @@ unsigned int _stdcall FastThreadFun(void* pPM) {
 }
 
 //慢线程
-unsigned int _stdcall SlowThreadFun(void* pPM) {
+unsigned int WINAPI SlowThreadFun(void* pPM) {
 	Sleep(100);
 	printf("%s 启动\n", (PSTR)pPM);
 	WaitForSingleObject(g_hThreadEvent, INFINITE);
@@ -40,18 +40,14 @@ int main() {
 		_beginthreadex(NULL, 0, FastThreadFun, szFastThreadName[i], 0, NULL);
 	for (i = 0; i < 2; i++)
 		_beginthreadex(NULL, 0, SlowThreadFun, szSlowThreadName[i], 0, NULL);
-
 	Sleep(50);
 	printf("现在主线程触发一个事件脉冲 - PlusEvent()\n");
 	PulseEvent(g_hThreadEvent);
-
 	Sleep(3000);
 	printf("时间到，主线程运行结束\n");
 	CloseHandle(g_hThreadEvent);
 	system("pause");
 	return 0;
 }
-
 //1.对于手动置位事件，所有正处于等待状态下线程都变成可调度状态。
-
 //2.对于自动置位事件，所有正处于等待状态下线程只有一个变成可调度状态。
