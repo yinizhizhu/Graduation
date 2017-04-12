@@ -9,43 +9,32 @@
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-class Thread : public CThread
-{
+class Thread : public CThread {
 protected:
 	virtual void Run(LPVOID lpParameter = 0);
 };
 
-void Thread::Run(LPVOID lpParameter)
-{
+void Thread::Run(LPVOID lpParameter) {
 	// reseed random generator
 	srand((unsigned)time(NULL));
-
 	HWND hWnd = (HWND)GetUserData();
 	RECT rect;
-
 	// get window’s dimensions
 	BOOL bError = GetClientRect(hWnd, &rect);
 	if (!bError)
-	{
 		return;
-	}
-
 	int iClientX = rect.right - rect.left;
 	int iClientY = rect.bottom - rect.top;
 
 	//do not draw if the window does not have any dimensions
 	if ((!iClientX) || (!iClientY))
-	{
 		return;
-	}
 
 	// get device context for drawing
 	HDC hDC = GetDC(hWnd);
 
-	if (hDC)
-	{   // draw the ten random figures
-		for (int iCount = 0; iCount < WINDOWS_NUMBER; iCount++)
-		{
+	if (hDC) {   // draw the ten random figures
+		for (int iCount = 0; iCount < WINDOWS_NUMBER; iCount++) {
 			// set coordinates
 			int iStartX = (int)(rand() % iClientX);
 			int iStopX = (int)(rand() % iClientX);
@@ -69,14 +58,11 @@ void Thread::Run(LPVOID lpParameter)
 		// release the Device Context
 		ReleaseDC(hWnd, hDC);
 	}
-
 	Sleep(SLEEP_TIME);
-
 	return;
 }
 
-int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int iCmdShow)
-{
+int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int iCmdShow) {
 	WNDCLASSEX wndEx = { 0 };
 
 	wndEx.cbClsExtra = 0;
@@ -93,9 +79,7 @@ int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int
 	wndEx.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 
 	if (!RegisterClassEx(&wndEx))
-	{
 		return 1;
-	}
 
 	HWND hWnd = CreateWindow(wndEx.lpszClassName, TEXT("Basic Thread Management"), WS_OVERLAPPEDWINDOW, 200, 200, 840, 440, HWND_DESKTOP, NULL, wndEx.hInstance, NULL);
 
@@ -109,8 +93,7 @@ int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int
 	ShowWindow(hWnd, SW_SHOW);
 
 	Thread threads[THREADS_NUMBER];
-	for (int iIndex = 0; iIndex < THREADS_NUMBER; iIndex++)
-	{
+	for (int iIndex = 0; iIndex < THREADS_NUMBER; iIndex++) {
 		threads[iIndex].Create(NULL, STATE_SYNC | STATE_CONTINUOUS);
 		threads[iIndex].SetUserData(hRects[iIndex]);
 	}
@@ -118,8 +101,7 @@ int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int
 	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)threads);
 
 	MSG msg = { 0 };
-	while (GetMessage(&msg, 0, 0, 0))
-	{
+	while (GetMessage(&msg, 0, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -128,30 +110,23 @@ int WINAPI _tWinMain(HINSTANCE hThis, HINSTANCE hPrev, LPTSTR szCommandLine, int
 	return 0;
 }
 
-LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-		case WM_DESTROY:
-		{
+LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+		case WM_DESTROY: {
 			PostQuitMessage(0);
 			break;
 		}
-		case WM_CLOSE:
-		{
+		case WM_CLOSE: {
 			Thread* pThread = (Thread*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 			pThread->Alert();
-			for (int iIndex = 0; iIndex < THREADS_NUMBER; iIndex++)
-			{
+			for (int iIndex = 0; iIndex < THREADS_NUMBER; iIndex++) {
 				pThread[iIndex].Join();
 			}
 			DestroyWindow(hWnd);
 			break;
 		}
 		default:
-		{
 			return DefWindowProc(hWnd, uMsg, wParam, lParam);
-		}
 	}
 	return 0;
 }
