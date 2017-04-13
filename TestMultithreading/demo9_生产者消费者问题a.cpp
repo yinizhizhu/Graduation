@@ -66,5 +66,5 @@ int main() {
 	CloseHandle(g_hEventEmpty);
 	DeleteCriticalSection(&g_cs);
 
-	system("pause");
+	return 0;
 }
