@@ -2,6 +2,7 @@
 #define _CTHREAD_
 
 #include <windows.h>
+#include <iostream>
 
 #define	STATE_RUNNING		0x0001
 #define	STATE_READY			0x0002
@@ -11,8 +12,9 @@
 #define	STATE_SYNC			0x0020
 #define	STATE_CONTINUOUS	0x0040
 
-class CLock
-{
+using namespace std;
+
+class CLock {
 public:
 	CLock();
 	~CLock();
@@ -20,8 +22,7 @@ private:
 	HANDLE hMutex;
 };
 
-class CThread
-{
+class CThread {
 public:
 	CThread() : hThread(0), dwThreadId(0), dwState(0), lpUserData(0), lpParameter(0){ }
 	HANDLE Create(LPVOID lpParameter, DWORD dwInitialState = STATE_ASYNC, DWORD dwCreationFlag = 0);
@@ -48,13 +49,11 @@ private:
 	HANDLE hEvent;
 };
 
-inline DWORD CThread::GetId() const
-{
+inline DWORD CThread::GetId() const {
 	return dwThreadId;
 }
 
-inline HANDLE CThread::GetHandle() const
-{
+inline HANDLE CThread::GetHandle() const {
 	return hThread;
 }
 

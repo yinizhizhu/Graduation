@@ -1,15 +1,13 @@
 #include "CThread.h"
 
-class Thread : public CThread
-{
+class Thread : public CThread {
 protected:
 	virtual void Run(LPVOID lpParameter = 0);
 };
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-void Thread::Run(LPVOID lpParameter)
-{
+void Thread::Run(LPVOID lpParameter) {
 	WNDCLASSEX wndEx = { 0 };
 
 	wndEx.cbClsExtra = 0;
@@ -26,9 +24,7 @@ void Thread::Run(LPVOID lpParameter)
 	wndEx.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 
 	if (!RegisterClassEx(&wndEx))
-	{
 		return;
-	}
 
 	HWND hWnd = CreateWindow(wndEx.lpszClassName, TEXT("Basic Thread Management"), WS_OVERLAPPEDWINDOW, 200, 200, 800, 600, HWND_DESKTOP, NULL, wndEx.hInstance, NULL);
 
@@ -36,8 +32,7 @@ void Thread::Run(LPVOID lpParameter)
 	ShowWindow(hWnd, SW_SHOW);
 
 	MSG msg = { 0 };
-	while (GetMessage(&msg, 0, 0, 0))
-	{
+	while (GetMessage(&msg, 0, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -45,8 +40,7 @@ void Thread::Run(LPVOID lpParameter)
 	UnregisterClass(wndEx.lpszClassName, wndEx.hInstance);
 }
 
-int main()
-{
+int main() {
 	Thread thread;
 	thread.Create(TEXT("WND_CLASS_1"));
 
@@ -59,24 +53,18 @@ int main()
 	return 0;
 }
 
-LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_DESTROY:
-	{
+LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+	case WM_DESTROY: {
 		PostQuitMessage(0);
 		break;
 	}
-	case WM_CLOSE:
-	{
+	case WM_CLOSE: {
 		DestroyWindow(hWnd);
 		break;
 	}
 	default:
-	{
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	}
 	}
 	return 0;
 }
