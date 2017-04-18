@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <tchar.h>
-#include <time.h>
 #include <iostream>
 #include <Windows.h>
 #include <process.h>
@@ -8,7 +7,7 @@
 using namespace std;
 
 #define SYNCHRONIZING_MUTEX_NAME		TEXT( "__MUTEX__" )
-#define FUCKYOU
+//#define FUCKYOU
 
 unsigned int WINAPI work(void* a) {
 	unsigned int ans = *(unsigned int*)a;
@@ -23,9 +22,9 @@ unsigned int WINAPI work(void* a) {
 		//ReleaseMutex(hMutex);
 		//cout << GetCurrentThreadId() << ": " << ans << "\n";
 #ifndef FUCKYOU
-		if (ans > 20000000) break;//78
+		if (ans > 20000000) break;//86.505387ms
 #else
-		if (ans > 10000000) break;//102
+		if (ans > 10000000) break;//49.876407ms
 #endif
 	}
 	//CloseHandle(hMutex);
@@ -40,7 +39,11 @@ int main() {
 	//	return 1;
 	//}
 	int n;
-	clock_t start = clock(), finish;
+	LARGE_INTEGER freq;
+	LARGE_INTEGER start_t, stop_t;
+	QueryPerformanceFrequency(&freq);
+	fprintf(stdout, "The frequency of your pc is %d.\n", freq.QuadPart);
+	QueryPerformanceCounter(&start_t);
 #ifndef FUCKYOU
 	n = 2;
 	HANDLE handle[2];
@@ -56,13 +59,13 @@ int main() {
 		handle[i] = (HANDLE)_beginthreadex(NULL, 0, work, (void*)&tag[i], NULL, NULL);
 	WaitForMultipleObjects(4, handle, TRUE, INFINITE);
 #endif
-	finish = clock();
+	QueryPerformanceCounter(&stop_t);
 #ifndef FUCKYOU
-	cout << "The two threads need time: ";
+	cout << "The two threads ";
 #else
-	cout << "The four threads need time: ";
+	cout << "The four threads ";
 #endif
-	cout << finish - start << endl;
+	fprintf(stdout, "executed time is %fms.\n", 1e3*(stop_t.QuadPart - start_t.QuadPart) / freq.QuadPart);
 	for (int i = 0; i < n; i++)
 		cout << "tag[" << i << "] = " << tag[i] << endl;
 	//CloseHandle(hMutex);
