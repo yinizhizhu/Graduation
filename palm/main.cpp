@@ -38,25 +38,12 @@ void testDel(batree<int>& r, int n) {
 	}
 }
 
-void clear(batree<int>& r) {
-	r.clear();
-	r.show();
-}
-
 int main() {
 	batree<int> r;
-	testInsert(r, 9 * DEGREEA);
-	testSearch(r, 10 * DEGREEA);
-	r.test(18);
+	//testInsert(r, 9 * DEGREEA);
+	//testSearch(r, 10 * DEGREEA);
+	//r.test(18);
 	//testDel(r, 9 * DEGREEA + 1);
-	//int n, tmp;
-	//cout << "The number of test cases: ";
-	//cin >> n;
-	//for (; n; n--) {
-	//	cin >> tmp;
-	//	r.del(tmp);
-	//	r.show();
-	//}
-	clear(r);
+
 	return 0;
 }

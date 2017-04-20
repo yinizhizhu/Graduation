@@ -1,11 +1,29 @@
 #pragma once
 #ifndef BATREE_H
 #define BATREE_H
+#include <vector>
+#include <random>
+#include <fstream>
 #include <iostream>
+#include <Windows.h>
 
 using namespace std;
 
-#define DEGREEA 3
+#define	DEGREEA	3
+
+#define	TEST_NUM	999
+#define	EACH_NUM	9
+#define	THREAD_NUM	4
+
+#define NULL_STEP	0x0000
+#define	ADD_STEP	0x0001
+#define	SPLIT_STEP	0x0002
+#define	DEL_STEP	0x0004
+#define	MERGE_STEP	0x0008
+#define	FIND_STEP	0x0010
+typedef	unsigned int	STEP_TYPE;
+
+#define	SYNCHRONIZING_MUTEX_NAME	TEXT( "__PALM_MUTEX__" )
 
 template<typename keyType>
 class batree {
@@ -35,9 +53,36 @@ private:
 		void	setP(node* t) { parent = t; }
 	};
 	node* root;
+
+	struct query {
+		STEP_TYPE	type;	//find, add, del
+		keyType		key;
+		node*		ans;	//store the result of searching
+		type(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
+		void setA(node* a) { ans = a; }
+	};
+	vector<query> query;	//store the queries
+
+	struct info {
+		STEP_TYPE	type;	//add, split, del, merge
+		keyType		key;
+		node*		cur;
+		info(STEP_TYPE t, keyType k, node* c) {
+			type = t;
+			k = k;
+			c = c;
+		}
+	};
+	vector<info> list;	//store the info for the cur to the upper node
+
+	HANDLE thead[THREAD_NUM];	//store the threads
 public:
 	batree();
 	~batree();
+	void fastRandom();				//get the query randomly
+	void palm();					//palm operation for this BPlus tree
+	void modifyNode();				//the supporting funciton
+	void sync();					//the supporting function
 	void* find(keyType k);								//get the node pointer
 	bool search(keyType k);								//search k in root
 	void split(node* x, int i);							//split the child whose index is i of node x

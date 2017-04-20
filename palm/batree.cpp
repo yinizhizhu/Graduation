@@ -4,12 +4,33 @@ template<typename keyType>
 batree<keyType>::batree() {	//initial
 	root = new node();
 	root->setL(true);	//start with leaf
+	for (int i = 0; i < THREAD_NUM; i++)
+		CloseHandle(thread[i]);
 }
 
 template<typename keyType>
 batree<keyType>::~batree() {	//free the sources
+	query.clear();
+	list.clear();
 	clear();
+	show();//test
 	delete root;
+}
+
+template<typename keyType>
+void batree<keyType>::fastRandom() {	//get the query randomly
+}
+
+template<typename keyType>
+void batree<keyType>::palm() {	//palm operation for this BPlus tree
+}
+
+template<typename keyType>
+void batree<keyType>::modifyNode() {	//the supporting funciton
+}
+
+template<typename keyType>
+void batree<keyType>::sync() {	//the supporting funciton
 }
 
 template<typename keyType>
