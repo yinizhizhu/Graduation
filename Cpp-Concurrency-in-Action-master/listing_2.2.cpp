@@ -5,7 +5,7 @@ using namespace std;
 
 void do_something(int& i) {
 	++i;
-	cout << i << endl;
+	cout << i << "\n";
 }
 
 struct func {
@@ -17,7 +17,9 @@ struct func {
 	}
 };
 
-void do_something_in_current_thread() {}
+void do_something_in_current_thread() {
+	cout << "Fuck you!\n";
+}
 
 void f() {
 	int some_local_state = 0;
