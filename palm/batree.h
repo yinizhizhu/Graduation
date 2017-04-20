@@ -1,6 +1,7 @@
 #pragma once
 #ifndef BATREE_H
 #define BATREE_H
+#include <time.h>
 #include <vector>
 #include <random>
 #include <fstream>
@@ -17,13 +18,14 @@ using namespace std;
 
 #define NULL_STEP	0x0000
 #define	ADD_STEP	0x0001
-#define	SPLIT_STEP	0x0002
-#define	DEL_STEP	0x0004
-#define	MERGE_STEP	0x0008
-#define	FIND_STEP	0x0010
+#define	DEL_STEP	0x0002
+#define	FIND_STEP	0x0004
+#define	SPLIT_STEP	0x0008
+#define	MERGE_STEP	0x0010
 typedef	unsigned int	STEP_TYPE;
 
-#define	SYNCHRONIZING_MUTEX_NAME	TEXT( "__PALM_MUTEX__" )
+#define	SYNCHRONIZING_MUTEX_NAME	TEXT("__PALM_MUTEX__")
+#define	OUTPUT_FILE_NAME	TEXT("query.txt")
 
 template<typename keyType>
 class batree {
@@ -58,10 +60,14 @@ private:
 		STEP_TYPE	type;	//find, add, del
 		keyType		key;
 		node*		ans;	//store the result of searching
-		type(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
+		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
 		void setA(node* a) { ans = a; }
 	};
-	vector<query> query;	//store the queries
+	vector<query> queries;	//store the queries
+	friend ofstream& operator<<(ofstream& os, const query& a) {
+		os << a.type << " " << a.key << " " << a.ans << "\n";
+		return os;
+	}
 
 	struct info {
 		STEP_TYPE	type;	//add, split, del, merge
@@ -75,11 +81,12 @@ private:
 	};
 	vector<info> list;	//store the info for the cur to the upper node
 
-	HANDLE thead[THREAD_NUM];	//store the threads
+	HANDLE thread[THREAD_NUM];	//store the threads
 public:
 	batree();
 	~batree();
 	void fastRandom();				//get the query randomly
+	void outputQuery();				//output the query in file
 	void palm();					//palm operation for this BPlus tree
 	void modifyNode();				//the supporting funciton
 	void sync();					//the supporting function

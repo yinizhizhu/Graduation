@@ -44,6 +44,7 @@ int main() {
 	//testSearch(r, 10 * DEGREEA);
 	//r.test(18);
 	//testDel(r, 9 * DEGREEA + 1);
-
+	r.fastRandom();
+	r.outputQuery();
 	return 0;
 }

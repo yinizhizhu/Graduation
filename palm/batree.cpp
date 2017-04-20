@@ -4,21 +4,33 @@ template<typename keyType>
 batree<keyType>::batree() {	//initial
 	root = new node();
 	root->setL(true);	//start with leaf
+}
+
+template<typename keyType>
+batree<keyType>::~batree() {	//free the sources
+	queries.clear();
+	list.clear();
+	clear();
+	show();//test
+	delete root;
 	for (int i = 0; i < THREAD_NUM; i++)
 		CloseHandle(thread[i]);
 }
 
 template<typename keyType>
-batree<keyType>::~batree() {	//free the sources
-	query.clear();
-	list.clear();
-	clear();
-	show();//test
-	delete root;
+void batree<keyType>::fastRandom() {	//get the query randomly
+	srand((int)time(0));
+	while (queries.size() < TEST_NUM)
+		queries.push_back(query(1 << (rand() % 3), rand() % 9999));
 }
 
 template<typename keyType>
-void batree<keyType>::fastRandom() {	//get the query randomly
+void batree<keyType>::outputQuery() {	//get the query randomly
+	ofstream out("query.txt");
+	unsigned int i, n = queries.size();
+	for (i = 0; i < n; i++)
+		out << queries[i];
+	out.close();
 }
 
 template<typename keyType>
