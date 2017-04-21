@@ -3,16 +3,19 @@
 #define BATREE_H
 #include <time.h>
 #include <vector>
+#include <thread>
 #include <random>
 #include <fstream>
+#include <utility>
 #include <iostream>
-#include <Windows.h>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 
 #define	DEGREEA	3
 
-#define	TEST_NUM	999
+#define	TEST_NUM	99
 #define	EACH_NUM	9
 #define	THREAD_NUM	4
 
@@ -25,7 +28,8 @@ using namespace std;
 typedef	unsigned int	STEP_TYPE;
 
 #define	SYNCHRONIZING_MUTEX_NAME	TEXT("__PALM_MUTEX__")
-#define	OUTPUT_FILE_NAME	TEXT("query.txt")
+#define	QUERY_FILE_NAME	TEXT("query.txt")
+#define RESULT_FILE_NAME TEXT("queryResult.txt")
 
 template<typename keyType>
 class batree {
@@ -65,7 +69,7 @@ private:
 	};
 	vector<query> queries;	//store the queries
 	friend ofstream& operator<<(ofstream& os, const query& a) {
-		os << a.type << " " << a.key << " " << a.ans << "\n";
+		os << a.type << '\t' << a.key << '\t' << a.ans << '\n';
 		return os;
 	}
 
@@ -81,17 +85,20 @@ private:
 	};
 	vector<info> list;	//store the info for the cur to the upper node
 
-	HANDLE thread[THREAD_NUM];	//store the threads
+	bool res[THREAD_NUM];
+	vector<thread> threads(THREAD_NUM);	//store the threads
 public:
 	batree();
 	~batree();
+	batree(batree const&) = delete;
+	batree& operator=(batree const&) = delete;
 	void fastRandom();				//get the query randomly
 	void outputQuery();				//output the query in file
 	void palm();					//palm operation for this BPlus tree
 	void modifyNode();				//the supporting funciton
 	void sync();					//the supporting function
 	void* find(keyType k);								//get the node pointer
-	bool search(keyType k);								//search k in root
+	bool search(keyType k, int p = 0);								//search k in root
 	void split(node* x, int i);							//split the child whose index is i of node x
 	void insertNon(node* x, keyType k);					//insert the k into the subtree whose root is node x
 	void insert(keyType k);								//insert the k into root
