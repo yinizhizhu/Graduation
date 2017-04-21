@@ -7,9 +7,9 @@ void show(batree<int>& r) {
 
 void testInsert(batree<int>& r, int n) {
 	for (int i = 0; i < n; i++) {
-		cout << "Insert " << i << ":" << endl;
+		//cout << "Insert " << i << ":" << endl;
 		r.insert(i);
-		show(r);
+		//show(r);
 	}
 	show(r);
 }
@@ -46,8 +46,5 @@ int main() {
 	r.palm();
 	//r.test(18);
 	//testDel(r, 9 * DEGREEA + 1);
-
-	//r.fastRandom();
-	//r.outputQuery();
 	return 0;
 }
