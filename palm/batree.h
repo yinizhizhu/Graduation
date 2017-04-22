@@ -25,6 +25,7 @@ using namespace std;
 #define	QRESULT_FILE_NAME	"queryResult.txt"
 #define	INFO_FILE_NAME		"info.txt"
 #define	IRESULT_FILE_NAME	"infoResult.txt"
+typedef unsigned int INDEX;
 
 //#define NULL_STEP	0x0000
 //#define	ADD_STEP	0x0001
@@ -32,7 +33,7 @@ using namespace std;
 //#define	FIND_STEP	0x0004
 //#define	SPLIT_STEP	0x0008
 //#define	MERGE_STEP	0x0010
-//typedef	unsigned int	STEP_TYPE;
+//typedef	unsigned INDEX	STEP_TYPE;
 
 enum STEP_TYPE {	//enumerate the type of each operation
 	FIN_STEP,	//find
@@ -47,7 +48,7 @@ class batree {
 private:
 	typedef struct node {
 		bool	leaf;					//true while current node is leaf node, false for inner node
-		int		key_n;					//the number of the key
+		int	key_n;					//the number of the key
 		keyType	key[2 * DEGREEA - 1];	//store the key
 		node*	parent;
 		node*	child[2 * DEGREEA];		//store the pointer of child
@@ -58,21 +59,21 @@ private:
 			leaf = false;
 			key_n = 0;
 		}
-		int		getN() { return key_n; }
+		int	getN() { return key_n; }
 		bool	getL() { return leaf; }
-		keyType	getK(int i) { return key[i]; }
-		node*	getC(int i) { return child[i]; }
+		keyType	getK(INDEX i) { return key[i]; }
+		node*	getC(INDEX i) { return child[i]; }
 		node*	getP() { return parent; }
-		void	setN(int n) { key_n = n; }
+		void	setN(INDEX n) { key_n = n; }
 		void	setL(bool b) { leaf = b; }
-		void	setK(int i, int n) { key[i] = n; }
-		void	setC(int i, node* t) { child[i] = t; }
+		void	setK(INDEX i, INDEX n) { key[i] = n; }
+		void	setC(INDEX i, node* t) { child[i] = t; }
 		void	setP(node* t) { parent = t; }
 	} NODE, *PNODE;
 	friend ofstream& operator<<(ofstream& os, const PNODE& a) {
 		os << "0x" << a << " ";
 		if (a) {
-			int i, n = a->key_n;
+			INDEX i, n = a->key_n;
 			for (i = 0; i < n; i++)
 				os << a->key[i] << " ";
 		}
@@ -101,6 +102,8 @@ private:
 		info*		next;
 		info(STEP_TYPE t, keyType k, info* n = NULL) : type(t), key(k), next(n) {}
 		void setN(info* n) { next = n; }
+		STEP_TYPE getT() { return type; }
+		keyType getK() { return key; }
 		info* getN() { return next; }
 	} INFO, *PINFO;
 	friend ofstream& operator<<(ofstream& os, const PINFO& a) {
@@ -112,6 +115,8 @@ private:
 		os << '\n';
 		return os;
 	}
+	//< PNODE, PINFO >
+	vector< pair<void*, void*> > moveList;				//move the value in inner node
 	unordered_map<void*, void*> list;	//store the info for the cur to the upper node
 	typedef unordered_map<void*, void*>::iterator infoIter;
 
@@ -126,20 +131,23 @@ public:
 	void outputQuery(char* fileName);	//output the query into file
 	void outputInfo(char* fileName);	//output the info into file
 	void palm();					//palm operation for this BPlus tree
-	void modifyNode(PNODE p);				//the supporting funciton
+	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton
+	int inBuffer(keyType* buffer, keyType key, int n);		//support the modifynode
+	void swap(keyType& a, keyType& b);							//support the modifynode
+	void showBuffer(keyType* buffer, int n);					//test
 	void sync();					//the supporting function
-	void find(int p);				//testing for finding
+	void find(INDEX p);				//testing for finding
 	void* findLeaf(keyType k);							//get the leaf node pointer
 	bool search(keyType k);								//search k in root
 	void split(PNODE x, int i);							//split the child whose index is i of node x
 	void insertNon(PNODE x, keyType k);					//insert the k into the subtree whose root is node x
 	void insert(keyType k);								//insert the k into root
-	void merge(PNODE x, int i, PNODE y, PNODE z);		//merge node y, key i and node z, x is the parent of y and z
+	void merge(PNODE x, INDEX i, PNODE y, PNODE z);		//merge node y, key i and node z, x is the parent of y and z
 	void del(keyType k);								//delete the k from root
 	void delNon(PNODE x, keyType k);					//delete the k from the subtree whose root is node x
 	void delSet(keyType k, keyType v);					//revalue the index while the head is changed
-	void shiftRTL(PNODE x, int i, PNODE y, PNODE z);	//x's right child y borrows a key and a child from x's left child of z
-	void shiftLTR(PNODE x, int i, PNODE y, PNODE z);	//...
+	void shiftRTL(PNODE x, INDEX i, PNODE y, PNODE z);	//x's right child y borrows a key and a child from x's left child of z
+	void shiftLTR(PNODE x, INDEX i, PNODE y, PNODE z);	//...
 	void doShow(PNODE root, int d);
 	void show();										//API for showing the btrees
 	void test(keyType n);			//test the parent
