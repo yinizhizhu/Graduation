@@ -14,7 +14,9 @@
 
 using namespace std;
 
-#define	DEGREEA	3
+#define	DEGREE	3
+#define MIN_DEGREE DEGREE-1
+#define MAX_DEGREE 2*DEGREE-1
 
 #define	TEST_NUM	99
 #define	EACH_NUM	9
@@ -35,26 +37,32 @@ typedef unsigned int INDEX;
 //#define	MERGE_STEP	0x0010
 //typedef	unsigned INDEX	STEP_TYPE;
 
-enum STEP_TYPE {	//enumerate the type of each operation
-	FIN_STEP,	//find
-	INS_STEP,	//insert
-	DEL_STEP,	//delete
-	SPL_STEP,	//split
-	MER_STEP	//merge
-};
-
 template<typename keyType>
 class batree {
 private:
+	enum STEP_TYPE {	//enumerate the type of each operation
+		FIN_STEP,	//find
+		INS_STEP,	//insert
+		DEL_STEP,	//delete
+		SPL_STEP,	//split
+		MER_STEP	//merge
+	};
+	friend ofstream& operator<<(ofstream& os, const STEP_TYPE& a) {
+		if (a == FIN_STEP) os << "fin";
+		else if (a == INS_STEP) os << "ins";
+		else os << "del";
+		return os;
+	}
+
 	typedef struct node {
 		bool	leaf;					//true while current node is leaf node, false for inner node
 		int	key_n;					//the number of the key
-		keyType	key[2 * DEGREEA - 1];	//store the key
+		keyType	key[MAX_DEGREE];	//store the key
 		node*	parent;
-		node*	child[2 * DEGREEA];		//store the pointer of child
+		node*	child[MAX_DEGREE + 1];		//store the pointer of child
 		node() {
 			parent = NULL;
-			for (int i = 2 * DEGREEA - 1; i >= 0; i--)
+			for (int i = MAX_DEGREE; i >= 0; i--)
 				child[i] = NULL;
 			leaf = false;
 			key_n = 0;
@@ -90,7 +98,12 @@ private:
 		keyType getK() { return key; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
-		os << a.type << '\t' << a.key << "\t";
+		//if (a.type == INS_STEP)
+		//	os << "ins\t";
+		//else if (a.type == DEL_STEP)
+		//	os << "del\t";
+		//else os << "fin\t";
+		os << a.type << "\t" << a.key << "\t";
 		os << a.ans;
 		return os;
 	}
@@ -109,7 +122,14 @@ private:
 	friend ofstream& operator<<(ofstream& os, const PINFO& a) {
 		PINFO move = a;
 		while (move) {
-			os << '\t' << move->type << ' ' << move->key << '\n';
+			os << '\t';
+			//if (move->type == INS_STEP)
+			//	os << "ins ";
+			//else if (move->type == DEL_STEP)
+			//	os << "del ";
+			//else os << "fin ";
+			os << move->type << " ";
+			os << move->key << '\n';
 			move = move->next;
 		}
 		os << '\n';
