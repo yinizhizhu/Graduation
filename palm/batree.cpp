@@ -9,7 +9,6 @@ batree<keyType>::batree() {	//initial
 	cout << "After node\n";
 	root->setL(true);	//start with leaf
 	queries.resize(THREAD_NUM);
-	moveList.resize(THREAD_NUM);
 	threadsId.resize(THREAD_NUM);
 	cout << "out initial\n";
 }
@@ -25,7 +24,7 @@ batree<keyType>::~batree() {	//free the sources
 		queries[i].clear();
 	queries.clear();
 
-	moveList.clear();
+	modifyList.clear();
 
 	infoIter move = list.begin();	//clean list
 	while (move != list.end()) {
@@ -116,7 +115,7 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	outputInfo(INFO_FILE_NAME);
 	for (int i = 0; i < THREAD_NUM; i++)
 		threads.push_back(thread(&batree<keyType>::find, this, i));
-	//sync
+		//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 	outputQuery(QRESULT_FILE_NAME);
 	cout << "finish the search!\n\nStarting modify-leaf-node...\n";
@@ -127,7 +126,7 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	infoIter move= list.begin();
 	for (int i = 0; i < THREAD_NUM && move!=list.end(); i++, move++)
 		threads.push_back(thread(&batree<keyType>::modifyNode, this, move, i));
-	//sync
+		//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
 	move = list.begin();
@@ -135,21 +134,41 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 		list.erase(move);
 		move = list.begin();
 	}
-
 	cout << "finish the modify-leaf-node!\n\nStarting modify-inner-node...\n";
-
 	outputInfo(IRESULT_FILE_NAME);
 	return;
 
 	//stage 3: modify-inner-NODE
-	threads.clear();
-	for (int i = 0; i < THREAD_NUM; i++)
-		threads.push_back(thread(&batree<keyType>::search, this, i));
-	//sync
-	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
+	for (int j = 2, deep = getDeep(); j < deep; j++) {
+		threads.clear();
+		move = modifyList.begin();
+		for (int i = 0; i < THREAD_NUM && move != modifyList.end(); i++)
+			threads.push_back(thread(&batree<keyType>::modifyNode, this, move, i));
+		//sync
+		for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
+	}
+	cout << "finish the modify-inner-node!\n\nStarting modify-root-node...\n";
+	return;
 
 	//stage 4: handle the root
-	threads.push_back(thread(&batree<keyType>::search, this, 0));
+	threads.clear();
+	move = modifyList.begin();
+	if (move != modifyList.end()) {
+		threads.push_back(thread(&batree<keyType>::handleRoot, this));
+		threads[0].join();
+	}
+}
+
+template<typename keyType>
+int batree<keyType>::getDeep() {
+	int deep = 0;
+	for (PNODE tmp = root; tmp; deep++, tmp = tmp->getC(0));
+	return deep;
+}
+
+template<typename keyType>
+void batree<keyType>::handleRoot() {	//the supporting funciton
+	cout << this_thread::get_id() << '\n';
 }
 
 template<typename keyType>
@@ -188,6 +207,18 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 	sort(buffer, buffer + n);//sorting 
 	//showBuffer(buffer, n);	//test
 
+	if (n > MAX_DEGREE) {
+		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		//big - split();
+	}
+	else if (n < MIN_DEGREE) {
+		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		//merge();
+	}
+	else {
+		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		//update();
+	}
 	//cout << "Out position " << p << "\n";
 }
 
@@ -213,11 +244,6 @@ void batree<keyType>::showBuffer(keyType* buffer, int n) {
 	for (; i < n; i++)
 		cout << buffer[i] << " ";
 	cout << '\n';
-}
-
-template<typename keyType>
-void batree<keyType>::sync() {	//the supporting funciton
-	cout << k << " -> " << this_thread::get_id() << '\n';
 }
 
 template<typename keyType>

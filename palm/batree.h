@@ -1,6 +1,7 @@
 #pragma once
 #ifndef BATREE_H
 #define BATREE_H
+#include <mutex>
 #include <time.h>
 #include <vector>
 #include <thread>
@@ -44,6 +45,7 @@ private:
 		FIN_STEP,	//find
 		INS_STEP,	//insert
 		DEL_STEP,	//delete
+		UPD_STEP,	//update
 		SPL_STEP,	//split
 		MER_STEP	//merge
 	};
@@ -109,7 +111,7 @@ private:
 	}
 	vector< vector<QUERY> > queries;	//store the queries
 
-	typedef struct info {
+	typedef struct info {	//for the leaf node
 		STEP_TYPE	type;	//add, split, del, merge
 		keyType		key;
 		info*		next;
@@ -135,10 +137,25 @@ private:
 		os << '\n';
 		return os;
 	}
-	//< PNODE, PINFO >
-	vector< pair<void*, void*> > moveList;				//move the value in inner node
+	//	< PNODE, PINFO >
 	unordered_map<void*, void*> list;	//store the info for the cur to the upper node
 	typedef unordered_map<void*, void*>::iterator infoIter;
+
+	typedef struct modify {
+		STEP_TYPE	type;
+		keyType		key;
+		PNODE		leaf;
+		modify*		next;
+		modify(STEP_TYPE t, keyType k, PNODE l, modify* n = NULL) : 
+			type(t), key(k), leaf(l), next(n) {}
+		void setN(modify* n) { next = n; }
+		keyType getK() { return key; }
+		PNODE getL() { return leaf; }
+		modify* getN() { return next; }
+	} MODIFY, *PMODIFY;
+	//	< PNODE parent, PMODIFY child>
+	mutex protectList;	//protect the modifyList
+	unordered_map<void*, void*> modifyList;
 
 	vector<thread> threads;	//store the threads
 	vector<thread::id> threadsId;
@@ -151,11 +168,12 @@ public:
 	void outputQuery(char* fileName);	//output the query into file
 	void outputInfo(char* fileName);	//output the info into file
 	void palm();					//palm operation for this BPlus tree
+	int getDeep();										//support the palm
+	void handleRoot();									//support the palm
 	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton
-	int inBuffer(keyType* buffer, keyType key, int n);		//support the modifynode
-	void swap(keyType& a, keyType& b);							//support the modifynode
-	void showBuffer(keyType* buffer, int n);					//test
-	void sync();					//the supporting function
+	int inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode
+	void swap(keyType& a, keyType& b);					//support the modifynode
+	void showBuffer(keyType* buffer, int n);			//test the buffer in modifynode
 	void find(INDEX p);				//testing for finding
 	void* findLeaf(keyType k);							//get the leaf node pointer
 	bool search(keyType k);								//search k in root
