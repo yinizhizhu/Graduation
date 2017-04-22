@@ -113,7 +113,8 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	fastRandom();
 	outputQuery(QUERY_FILE_NAME);
 	outputInfo(INFO_FILE_NAME);
-	for (int i = 0; i < THREAD_NUM; i++)
+	int i = 0;
+	for (; i < THREAD_NUM; i++)
 		threads.push_back(thread(&batree<keyType>::find, this, i));
 		//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
@@ -124,16 +125,14 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	threads.clear();
 	
 	infoIter move= list.begin();
-	for (int i = 0; i < THREAD_NUM && move!=list.end(); i++, move++)
-		threads.push_back(thread(&batree<keyType>::modifyNode, this, move, i));
+	for (i = 0; i < THREAD_NUM && move!=list.end(); i++, move++)
+		threads.push_back(thread(&batree<keyType>::modifyNode, this, move, 0));
 		//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
-	move = list.begin();
-	for (int i = 0; i < THREAD_NUM && move != list.end(); i++) {
-		list.erase(move);
-		move = list.begin();
-	}
+	for (; i > 0; i--)	//remove the info which is handled
+		list.erase(list.begin());
+
 	cout << "finish the modify-leaf-node!\n\nStarting modify-inner-node...\n";
 	outputInfo(IRESULT_FILE_NAME);
 	return;
@@ -142,10 +141,13 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	for (int j = 2, deep = getDeep(); j < deep; j++) {
 		threads.clear();
 		move = modifyList.begin();
-		for (int i = 0; i < THREAD_NUM && move != modifyList.end(); i++)
-			threads.push_back(thread(&batree<keyType>::modifyNode, this, move, i));
+		for (i = 0; i < THREAD_NUM && move != modifyList.end(); i++, move++)
+			threads.push_back(thread(&batree<keyType>::modifyNode, this, move, 1));
 		//sync
 		for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
+
+		for (; i > 0; i--)	//remove the info which is handled
+			modifyList.erase(modifyList.begin());
 	}
 	cout << "finish the modify-inner-node!\n\nStarting modify-root-node...\n";
 	return;
@@ -177,14 +179,14 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 	//cout << "Current thread id is: " << this_thread::get_id() << "\n";
 
 	PNODE cur = (PNODE)inf->first;
-	PINFO ope = (PINFO)inf->second;
 
 	keyType buffer[TEST_NUM];
 	int i, n = cur->getN();//just for int
 	for (i = 0; i < n; i++)
 		buffer[i] = cur->getK(i);
 	//showBuffer(buffer, n);//test
-	PINFO move;
+
+	PINFO ope = (PINFO)inf->second, move;
 	while (ope) {
 		keyType key = ope->getK();
 		i = inBuffer(buffer, key, n);
@@ -207,16 +209,57 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 	sort(buffer, buffer + n);//sorting 
 	//showBuffer(buffer, n);	//test
 
+	int j = 0;
+	PNODE parent = cur->getP(), buf;
 	if (n > MAX_DEGREE) {
+		PMODIFY child = new MODIFY(UPD_STEP, buffer[j], cur), moveChild = child;
+		while (n > MAX_DEGREE) {
+			buf = moveChild->getL();
+			for (i = 0; i < MIN_DEGREE; i++, j++)
+				buf->setK(i, buffer[j]);
+			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, MIN_DEGREE, cur->getL())));
+			moveChild = moveChild->getN();
+			n -= MIN_DEGREE;
+		}
+		buf = moveChild->getL();
+		for (i = 0; n > 0; i++, j++, n--)
+			buf->setK(i, buffer[j]);
 		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		infoIter step = modifyList.find(parent);
+		if (step != modifyList.end())
+			modifyList[parent] = child;
+		else {
+			moveChild->setN((PMODIFY)step->second);
+			step->second = child;
+		}
 		//big - split();
 	}
 	else if (n < MIN_DEGREE) {
+		PMODIFY child = new MODIFY(DEL_STEP, buffer[j], cur);
+		for (; n > 0; j++, n--)
+			cur->setK(j, buffer[j]);
 		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		infoIter step = modifyList.find(parent);
+		if (step != modifyList.end())
+			modifyList[parent] = child;
+		else {
+			child->setN((PMODIFY)step->second);
+			step->second = child;
+		}
 		//merge();
 	}
 	else {
+		PMODIFY child = new MODIFY(UPD_STEP, buffer[j], cur);
+		for (; n > 0; j++, n--)
+			cur->setK(j, buffer[j]);
 		lock_guard<mutex> guard(protectList);	//protect the modifyList
+		infoIter step = modifyList.find(parent);
+		if (step != modifyList.end())
+			modifyList[parent] = child;
+		else {
+			child->setN((PMODIFY)step->second);
+			step->second = child;
+		}
 		//update();
 	}
 	//cout << "Out position " << p << "\n";

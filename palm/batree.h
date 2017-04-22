@@ -58,16 +58,16 @@ private:
 
 	typedef struct node {
 		bool	leaf;					//true while current node is leaf node, false for inner node
-		int	key_n;					//the number of the key
+		int		key_n;					//the number of the key
 		keyType	key[MAX_DEGREE];	//store the key
 		node*	parent;
 		node*	child[MAX_DEGREE + 1];		//store the pointer of child
-		node() {
-			parent = NULL;
+		node(node* p = NULL, int k_n = 0, bool l = false) {
+			parent = p;
 			for (int i = MAX_DEGREE; i >= 0; i--)
 				child[i] = NULL;
-			leaf = false;
-			key_n = 0;
+			leaf = l;
+			key_n = k_n;
 		}
 		int	getN() { return key_n; }
 		bool	getL() { return leaf; }
@@ -170,7 +170,7 @@ public:
 	void palm();					//palm operation for this BPlus tree
 	int getDeep();										//support the palm
 	void handleRoot();									//support the palm
-	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton
+	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
 	int inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode
 	void swap(keyType& a, keyType& b);					//support the modifynode
 	void showBuffer(keyType* buffer, int n);			//test the buffer in modifynode
