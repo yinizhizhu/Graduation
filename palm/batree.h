@@ -10,6 +10,7 @@
 #include <iostream>
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
 
 using namespace std;
 
@@ -19,9 +20,11 @@ using namespace std;
 #define	EACH_NUM	9
 #define	THREAD_NUM	4
 
-#define	SYNCHRONIZING_MUTEX_NAME "__PALM_MUTEX__"
-#define	QUERY_FILE_NAME	"query.txt"
-#define RESULT_FILE_NAME "queryResult.txt"
+#define	SYNCHRONIZING_MUTEX_NAME	"__PALM_MUTEX__"
+#define	QUERY_FILE_NAME		"query.txt"
+#define	QRESULT_FILE_NAME	"queryResult.txt"
+#define	INFO_FILE_NAME		"info.txt"
+#define	IRESULT_FILE_NAME	"infoResult.txt"
 
 //#define NULL_STEP	0x0000
 //#define	ADD_STEP	0x0001
@@ -66,6 +69,15 @@ private:
 		void	setC(int i, node* t) { child[i] = t; }
 		void	setP(node* t) { parent = t; }
 	} NODE, *PNODE;
+	friend ofstream& operator<<(ofstream& os, const PNODE& a) {
+		os << "0x" << a << " ";
+		if (a) {
+			int i, n = a->key_n;
+			for (i = 0; i < n; i++)
+				os << a->key[i] << " ";
+		}
+		return os;
+	}
 	PNODE root;
 
 	typedef struct query {
@@ -74,15 +86,11 @@ private:
 		PNODE		ans;	//store the result of searching
 		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
 		void setA(PNODE a) { ans = a; }
+		keyType getK() { return key; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
-		os << a.type << '\t' << a.key << '\t' << a.ans;
-		if (a.ans) {
-			os << ": ";
-			int i, n = a.ans->getN();
-			for (i = 0; i < n; i++)
-				os << a.ans->getK(i) << " ";
-		}
+		os << a.type << '\t' << a.key << "\t";
+		os << a.ans;
 		return os;
 	}
 	vector< vector<QUERY> > queries;	//store the queries
@@ -90,30 +98,39 @@ private:
 	typedef struct info {
 		STEP_TYPE	type;	//add, split, del, merge
 		keyType		key;
-		PNODE		cur;
-		info(STEP_TYPE t, keyType k, PNODE c) {
-			type = t;
-			k = k;
-			c = c;
-		}
+		info*		next;
+		info(STEP_TYPE t, keyType k, info* n = NULL) : type(t), key(k), next(n) {}
+		void setN(info* n) { next = n; }
+		info* getN() { return next; }
 	} INFO, *PINFO;
-	vector< vector<info> > list;	//store the info for the cur to the upper node
+	friend ofstream& operator<<(ofstream& os, const PINFO& a) {
+		PINFO move = a;
+		while (move) {
+			os << '\t' << move->type << ' ' << move->key << '\n';
+			move = move->next;
+		}
+		os << '\n';
+		return os;
+	}
+	unordered_map<void*, void*> list;	//store the info for the cur to the upper node
+	typedef unordered_map<void*, void*>::iterator infoIter;
 
-	vector<bool> res;
 	vector<thread> threads;	//store the threads
+	vector<thread::id> threadsId;
 public:
 	batree();
 	~batree();
 	batree(batree const&) = delete;
 	batree& operator=(batree const&) = delete;
 	void fastRandom();				//get the query randomly
-	void outputQuery(char* fileName);	//output the query in file
+	void outputQuery(char* fileName);	//output the query into file
+	void outputInfo(char* fileName);	//output the info into file
 	void palm();					//palm operation for this BPlus tree
-	void modifyNode();				//the supporting funciton
+	void modifyNode(PNODE p);				//the supporting funciton
 	void sync();					//the supporting function
-	void fin(int p);				//testing for finding
-	void* find(keyType k);								//get the node pointer
-	bool search(keyType k, int p = 0);					//search k in root
+	void find(int p);				//testing for finding
+	void* findLeaf(keyType k);							//get the leaf node pointer
+	bool search(keyType k);								//search k in root
 	void split(PNODE x, int i);							//split the child whose index is i of node x
 	void insertNon(PNODE x, keyType k);					//insert the k into the subtree whose root is node x
 	void insert(keyType k);								//insert the k into root

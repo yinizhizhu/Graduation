@@ -5,19 +5,33 @@ batree<keyType>::batree() {	//initial
 	root = new NODE();
 	root->setL(true);	//start with leaf
 	queries.resize(THREAD_NUM);
-	list.resize(THREAD_NUM);
-	res.resize(THREAD_NUM);
 	threads.resize(THREAD_NUM);
+	threadsId.resize(THREAD_NUM);
 }
 
 template<typename keyType>
 batree<keyType>::~batree() {	//free the sources
-	queries.clear();
-	list.clear();
-	threads.clear();
 	clear();
 	//show();//test
 	delete root;
+
+	for (int i = 0; i < THREAD_NUM; i++)//clean queries
+		queries[i].clear();
+	queries.clear();
+
+	infoIter tmp = list.begin();//clean list
+	for (; tmp != list.end(); tmp++) {
+		PINFO del = (PINFO)tmp->second, tmp;
+		while (del) {
+			tmp = del->getN();
+			delete del;
+			del = tmp;
+		}
+	}
+	list.clear();
+
+	threads.clear();
+	threadsId.clear();
 }
 
 template<typename keyType>
@@ -26,13 +40,32 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	//while (queries.size() < EACH_NUM)
 	//	queries.push_back(QUERY(rand() % 3, rand() % 9999));
 
+	//get the search query randomly, stored in 'queries'
 	for (int i = 0; i < THREAD_NUM; i++)
 		for (int j = 0; j < EACH_NUM; j++)
 			queries[i].push_back(QUERY(FIN_STEP, rand() % 18));
+
+	//get the Delete&Insert query randomly, store in 'list'
+	PNODE p;
+	keyType k;
+	infoIter item;
+	for (int i = 0; i < EACH_NUM*EACH_NUM; i++) {
+		k = rand() % 100;	//while keytype is INT
+		p = (PNODE)findLeaf(k);
+		item = list.find(p);
+		if (item != list.end()) {
+			PINFO head = (PINFO)item->second, tmp;
+			tmp = new INFO((STEP_TYPE)(rand() % 2 + 1), k);
+			tmp->setN(head);
+			item->second = tmp;
+		}
+		else
+			list[p] = new INFO((STEP_TYPE)(rand() % 2 + 1), k);
+	}
 }
 
 template<typename keyType>
-void batree<keyType>::outputQuery(char* fileName) {	//get the query randomly
+void batree<keyType>::outputQuery(char* fileName) {	//output the query
 	//ofstream out(QUERY_FILE_NAME);
 	//unsigned int i, n = queries.size();
 	//for (i = 0; i < n; i++)
@@ -41,10 +74,27 @@ void batree<keyType>::outputQuery(char* fileName) {	//get the query randomly
 
 	ofstream out(fileName);
 	for (int i = 0; i < THREAD_NUM; i++) {
-		out << i << ": \n";
+		out << i << " - " << threadsId[i] << ": \n";
 		for (int j = 0; j < EACH_NUM; j++)
 			out << queries[i][j] << '\n';
 		out << "\n";
+	}
+	out.close();
+}
+
+template<typename keyType>
+void batree<keyType>::outputInfo(char* fileName) {	//output the info
+	//ofstream out(QUERY_FILE_NAME);
+	//unsigned int i, n = queries.size();
+	//for (i = 0; i < n; i++)
+	//	out << queries[i];
+	//out.close();
+
+	ofstream out(fileName);
+	infoIter tmp = list.begin();
+	for (; tmp != list.end(); tmp++) {
+		out << (PNODE)tmp->first << ": \n";
+		out << (PINFO)tmp->second;
 	}
 	out.close();
 }
@@ -54,30 +104,33 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	//stage 1: search
 	fastRandom();
 	outputQuery(QUERY_FILE_NAME);
+	outputInfo(INFO_FILE_NAME);
 	for (int i = 0; i < THREAD_NUM; i++)
-		threads[i] = thread(&batree<keyType>::fin, this, i);
+		threads[i] = thread(&batree<keyType>::find, this, i);
 	//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
-	outputQuery(RESULT_FILE_NAME);
+	outputQuery(QRESULT_FILE_NAME);
+	outputInfo(IRESULT_FILE_NAME);
 	return;
 	//stage 2: modify-leaf-NODE
 	for (int i = 0; i < THREAD_NUM; i++)
-		threads[i] = thread(&batree<keyType>::search, this, 18 + i, i);
+		threads[i] = thread(&batree<keyType>::modifyNode, this, (PNODE)NULL);
 	//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
 	//stage 3: modify-inner-NODE
 	for (int i = 0; i < THREAD_NUM; i++)
-		threads[i] = thread(&batree<keyType>::search, this, 18 + i, i);
+		threads[i] = thread(&batree<keyType>::search, this, i);
 	//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 
 	//stage 4: handle the root
-	threads[0] = thread(&batree<keyType>::search, this, 18 + 0, 0);
+	threads[0] = thread(&batree<keyType>::search, this, 0);
 }
 
 template<typename keyType>
-void batree<keyType>::modifyNode() {	//the supporting funciton
+void batree<keyType>::modifyNode(PNODE p) {	//the supporting funciton
+
 }
 
 template<typename keyType>
@@ -86,15 +139,16 @@ void batree<keyType>::sync() {	//the supporting funciton
 }
 
 template<typename keyType>
-void batree<keyType>::fin(int p) {	//the supporting funciton
+void batree<keyType>::find(int p) {	//the supporting funciton
 	cout << "Current thread id is: "
 		<< this_thread::get_id() << " -> " << p << '\n';
+	threadsId[p] = this_thread::get_id();
 	for (int i = 0; i < EACH_NUM; i++)
-		queries[p][i].setA((PNODE)find(queries[p][i].key));
+		queries[p][i].setA((PNODE)findLeaf(queries[p][i].getK()));
 }
 
 template<typename keyType>
-void* batree<keyType>::find(keyType k) {	//get the NODE pointer
+void* batree<keyType>::findLeaf(keyType k) {	//get the NODE pointer
 	PNODE r = root;
 	while (r) {
 		int i = 0;
@@ -102,20 +156,15 @@ void* batree<keyType>::find(keyType k) {	//get the NODE pointer
 			while (i < r->getN() && k >= r->getK(i)) i++;
 		else//for the inner NODE
 			while (i < r->getN() && k > r->getK(i)) i++;
-		if (i < r->getN() && k == r->getK(i))
-			return r;
-		else if (r->getL()) {
-			//cout << "The key does not exist!" << endl;
-			return NULL;
-		}
+		if (r->getL())
+			break;
 		r = r->getC(i);
 	}
-	//cout << "The key does not exist!" << endl;
-	return NULL;
+	return r;
 }
 
 template<typename keyType>
-bool batree<keyType>::search(keyType k, int p) {	//search k in root
+bool batree<keyType>::search(keyType k) {	//search k in root
 	PNODE r = root;
 	while (r) {
 		int i = 0;
@@ -125,18 +174,15 @@ bool batree<keyType>::search(keyType k, int p) {	//search k in root
 			while (i < r->getN() && k > r->getK(i)) i++;
 		if (i < r->getN() && k == r->getK(i)) {
 			//cout << "Here is " << k << '\n';
-			res[p] = true;//for the result
 			return true;
 		}
 		else if (r->getL()) {
 			//cout << "The key does not exist!" << endl;
-			res[p] = false;//for the result
 			return false;
 		}
 		r = r->getC(i);
 	}
 	//cout << "The key does not exist!" << endl;
-	res[p] = false;//for the result
 	return false;
 }
 
@@ -377,7 +423,7 @@ void batree<keyType>::show() {//API for showing the btrees
 
 template<typename keyType>
 void batree<keyType>::test(keyType n) {//API for showing the btrees
-	PNODE tmp = (PNODE)find(n);
+	PNODE tmp = (PNODE)findLeaf(n);
 	while (tmp) {
 		int i, n = tmp->getN();
 		for (i = 0; i < n; i++)
