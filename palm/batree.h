@@ -73,7 +73,7 @@ private:
 			leaf = l;
 			key_n = k_n;
 		}
-		int	getN() { return key_n; }
+		int		getN() { return key_n; }
 		bool	getL() { return leaf; }
 		keyType	getK(INDEX i) { return key[i]; }
 		node*	getC(INDEX i) { return child[i]; }
@@ -100,8 +100,8 @@ private:
 		keyType		key;
 		PNODE		ans;	//store the result of searching
 		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
-		void setA(PNODE a) { ans = a; }
-		keyType getK() { return key; }
+		void	setA(PNODE a) { ans = a; }
+		keyType	getK() { return key; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
 		//if (a.type == INS_STEP)
@@ -120,10 +120,10 @@ private:
 		keyType		key;
 		info*		next;
 		info(STEP_TYPE t, keyType k, info* n = NULL) : type(t), key(k), next(n) {}
-		void setN(info* n) { next = n; }
-		STEP_TYPE getT() { return type; }
-		keyType getK() { return key; }
-		info* getN() { return next; }
+		void		setN(info* n) { next = n; }
+		STEP_TYPE	getT() { return type; }
+		keyType		getK() { return key; }
+		info*		getN() { return next; }
 	} INFO, *PINFO;
 	friend ofstream& operator<<(ofstream& os, const PINFO& a) {
 		PINFO move = a;
@@ -147,17 +147,19 @@ private:
 
 	typedef struct modify {
 		STEP_TYPE	type;
-		keyType		key;
+		keyType		key, old;
 		PNODE		leaf;
 		modify*		next;
 		modify(STEP_TYPE t, keyType k, PNODE l, modify* n = NULL) : 
 			type(t), key(k), leaf(l), next(n) {}
-		STEP_TYPE getT() { return type; }
-		void setT(STEP_TYPE s) { type = s; }
-		void setN(modify* n) { next = n; }
-		keyType getK() { return key; }
-		PNODE getL() { return leaf; }
-		modify* getN() { return next; }
+		STEP_TYPE	getT() { return type; }
+		void		setT(STEP_TYPE s) { type = s; }
+		void		setN(modify* n) { next = n; }
+		void		setO(keyType o) { old = o; }
+		keyType		getK() { return key; }
+		PNODE		getL() { return leaf; }
+		modify*		getN() { return next; }
+		keyType		getO() { return old; }
 	} MODIFY, *PMODIFY;
 	friend ofstream& operator<<(ofstream& os, const PMODIFY& a) {
 		PMODIFY move = a;
@@ -190,7 +192,8 @@ public:
 	int getDeep();										//support the palm
 	void handleRoot();									//support the palm
 	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
-	void getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p);	//suppor the modifyNode
+	int inParent(keyType key, PNODE parent);
+	void getBuffer(vector<PNODE>& child, infoIter inf, keyType* buffer, int& n, INDEX p);	//suppor the modifyNode
 	void pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild);	//support the modifynode
 	void outputModify(PNODE parent, PMODIFY child);		//Just for testing
 	int inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode

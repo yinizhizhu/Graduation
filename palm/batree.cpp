@@ -24,8 +24,6 @@ batree<keyType>::~batree() {	//free the sources
 		queries[i].clear();
 	queries.clear();
 
-	modifyList.clear();
-
 	infoIter move = list.begin();	//clean list
 	while (move != list.end()) {
 		PINFO fuck = (PINFO)move->second, tmp;
@@ -36,6 +34,19 @@ batree<keyType>::~batree() {	//free the sources
 		}
 		move++;
 	}
+	list.clear();
+
+	move = modifyList.begin();	//clean list
+	while (move != modifyList.end()) {
+		PMODIFY fuck = (PMODIFY)move->second, tmp;
+		while (fuck) {
+			tmp = fuck->getN();
+			delete fuck;
+			fuck = tmp;
+		}
+		move++;
+	}
+	modifyList.clear();
 
 	threads.clear();
 	threadsId.clear();
@@ -177,6 +188,7 @@ template<typename keyType>
 void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funciton
 	//cout << "Current thread id is: " << this_thread::get_id() << "\n";
 
+	vector<PNODE> childBuf;
 	keyType buffer[TEST_NUM];
 	PNODE cur = (PNODE)inf->first;
 	int i, n = cur->getN();//just for int
@@ -198,6 +210,7 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 
 		cur->setN(len);//set the number of key
 		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		child->setO(cur->getK(0));
 		PMODIFY moveChild = child;
 		while (n > MAX_DEGREE) {
 			buf = moveChild->getL();
@@ -212,19 +225,16 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 		for (i = 0; n > 0; i++, j++, n--)
 			buf->setK(i, buffer[j]);
 
-		outputModify(parent, child);//test;
-
 		pushModify(parent, child, moveChild);
 	}
 	else {
+		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		child->setO(cur->getK(0));
+		if (n < MIN_DEGREE) child->setT(DEL_STEP);
+
 		cur->setN(n);//set the number of key
 		for (; n > 0; j++, n--)
 			cur->setK(j, buffer[j]);
-
-		child = new MODIFY(UPD_STEP, buffer[j], cur);
-		if (n < MIN_DEGREE) child->setT(DEL_STEP);
-
-		outputModify(parent, child);//test;
 
 		pushModify(parent, child, child);
 		//update();
@@ -233,7 +243,16 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 }
 
 template<typename keyType>
-void batree<keyType>::getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p) {
+int batree<keyType>::inParent(keyType key, PNODE parent) {
+	int n = parent->getN();
+	for (int i = 0; i < n; i++)
+		if (cur == parent->getK(i))
+			return i;
+	return -1;
+}
+
+template<typename keyType>
+void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, keyType* buffer, int& n, INDEX p) {
 	if (p == 0) {
 		PINFO ope = (PINFO)inf->second, move;
 		int i;
@@ -248,34 +267,54 @@ void batree<keyType>::getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p) 
 				if (i < n)
 					swap(buffer[i], buffer[--n]);
 			}
-			else if (ope->getT() == UPD_STEP) {
-				//
-			}
 			move = ope->getN();
 			delete ope; //free the room
 			ope = move;
 		}
-
 	}
 	else {
+		PNODE cur = (PNODE)inf->first;
 		PMODIFY ope = (PMODIFY)inf->second, move;
-		int i;
+		int i, j = 0;
 		while (ope) {
 			keyType key = ope->getK();
-			i = inBuffer(buffer, key, n);
+			move = ope->getN();
 			if (ope->getT() == INS_STEP) {
-				if (i == n)	//push into the last position
-					buffer[n++] = key;
+				i = inBuffer(buffer, key, n);
+				buffer[n++] = key;
+				child.push_back(ope->getL());
+				delete ope; //free the room
 			}
-			else if (ope->getT() == DEL_STEP) {
-				if (i < n)
+			else if (ope->getT() == DEL_STEP) {//PROBLEM
+				i = inBuffer(buffer, ope->getO(), n);
+				if (ope->getL()->getN() == 0)
 					swap(buffer[i], buffer[--n]);
+				else {
+					buffer[i] = ope->getK();
+					child.push_back(ope->getL());
+				}
+				delete ope; //free the room
 			}
 			else if (ope->getT() == UPD_STEP) {
-				//
+				i = inBuffer(buffer, ope->getO(), n);
+				for (; j < i; j++)
+					child.push_back(cur->getC(j));
+				if (ope->getL())
+					child.push_back(ope->getL());
+
+				if (i >= 0) {
+					buffer[i] = key;
+					delete ope; //free the room
+				}
+				else {
+					//only one head in one node
+					//for the update in more inner node
+					ope->setL(NULL);
+					ope->setN(NULL);
+					pushModify(cur->getP(), ope, ope);//store the update info
+				}
+					;//problem
 			}
-			move = ope->getN();
-			delete ope; //free the room
 			ope = move;
 		}
 	}
@@ -284,13 +323,14 @@ void batree<keyType>::getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p) 
 template<typename keyType>
 void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild){
 	lock_guard<mutex> guard(protectList);	//protect the modifyList
+	//outputModify(parent, child);//test;
 	infoIter step = modifyList.find(parent);
-	if (step != modifyList.end())
+	if (step == modifyList.end())
 		modifyList[parent] = child;
 	else {
 		PMODIFY head = (PMODIFY)step->second;
-		keyType ck = child->getL()->getK(0);
-		if (ck < head->getL()->getK(0)) {
+		keyType ck = child->getK();
+		if (ck < head->get()) {
 			moveChild->setN(head);
 			step->second = child;
 		}
@@ -298,7 +338,7 @@ void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild)
 			PMODIFY pre = head;
 			head = head->getN();
 			while (head) {
-				if (ck < head->getL()->getK(0))
+				if (ck < head->getK())
 					break;
 				pre = head;
 				head = head->getN();
@@ -307,6 +347,7 @@ void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild)
 			moveChild->setN(head);
 		}
 	}
+	//outputModify(parent, (PMODIFY)modifyList.find(parent)->second);//test;
 }
 
 template<typename keyType>
