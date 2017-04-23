@@ -2,6 +2,8 @@
 #ifndef BATREE_H
 #define BATREE_H
 #include <mutex>
+#include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <vector>
 #include <thread>
@@ -52,7 +54,9 @@ private:
 	friend ofstream& operator<<(ofstream& os, const STEP_TYPE& a) {
 		if (a == FIN_STEP) os << "fin";
 		else if (a == INS_STEP) os << "ins";
-		else os << "del";
+		else if (a == DEL_STEP) os << "del";
+		else if (a == UPD_STEP) os << "upd";
+		else os << "mer";
 		return os;
 	}
 
@@ -148,11 +152,26 @@ private:
 		modify*		next;
 		modify(STEP_TYPE t, keyType k, PNODE l, modify* n = NULL) : 
 			type(t), key(k), leaf(l), next(n) {}
+		STEP_TYPE getT() { return type; }
+		void setT(STEP_TYPE s) { type = s; }
 		void setN(modify* n) { next = n; }
 		keyType getK() { return key; }
 		PNODE getL() { return leaf; }
 		modify* getN() { return next; }
 	} MODIFY, *PMODIFY;
+	friend ofstream& operator<<(ofstream& os, const PMODIFY& a) {
+		PMODIFY move = a;
+		os << "0x" << a << ":\n";
+		while (move) {
+			os << "\t";
+			os << move->type << " ";
+			os << move->key << ": ";
+			os << move->leaf << '\n';
+			move = move->next;
+		}
+		os << '\n';
+		return os;
+	}
 	//	< PNODE parent, PMODIFY child>
 	mutex protectList;	//protect the modifyList
 	unordered_map<void*, void*> modifyList;
@@ -171,6 +190,9 @@ public:
 	int getDeep();										//support the palm
 	void handleRoot();									//support the palm
 	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
+	void getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p);	//suppor the modifyNode
+	void pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild);	//support the modifynode
+	void outputModify(PNODE parent, PMODIFY child);		//Just for testing
 	int inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode
 	void swap(keyType& a, keyType& b);					//support the modifynode
 	void showBuffer(keyType* buffer, int n);			//test the buffer in modifynode

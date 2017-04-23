@@ -175,94 +175,149 @@ void batree<keyType>::handleRoot() {	//the supporting funciton
 
 template<typename keyType>
 void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funciton
-	//cout << "In position " << p << "\n";
 	//cout << "Current thread id is: " << this_thread::get_id() << "\n";
 
-	PNODE cur = (PNODE)inf->first;
-
 	keyType buffer[TEST_NUM];
+	PNODE cur = (PNODE)inf->first;
 	int i, n = cur->getN();//just for int
 	for (i = 0; i < n; i++)
 		buffer[i] = cur->getK(i);
 	//showBuffer(buffer, n);//test
-
-	PINFO ope = (PINFO)inf->second, move;
-	while (ope) {
-		keyType key = ope->getK();
-		i = inBuffer(buffer, key, n);
-		if (ope->getT() == INS_STEP) {
-			//cout << "insert " << key << ": ";//test
-			if (i == n)	//push into the last position
-				buffer[n++] = key;
-		}
-		else {
-			//cout << "delete " << key << ": ";//test
-			if (i < n)
-				swap(buffer[i], buffer[--n]);
-		}
-		move = ope->getN();
-		delete ope; //free the room
-		ope = move;
-		//showBuffer(buffer, n);//test
-	}
-	//showBuffer(buffer, n);	//test
+	getBuffer(inf, buffer, n, p);
 	sort(buffer, buffer + n);//sorting 
-	//showBuffer(buffer, n);	//test
+	showBuffer(buffer, n);	//test
 
 	int j = 0;
+	PMODIFY child = NULL;
 	PNODE parent = cur->getP(), buf;
-	if (n > MAX_DEGREE) {
-		PMODIFY child = new MODIFY(UPD_STEP, buffer[j], cur), moveChild = child;
+	if (n > MAX_DEGREE) {	//	NEED AHNDLE THE DIFFER 
+		//big - split();
+		int len = MIN_DEGREE;		//for the inner node
+		if (p == 1)
+			len = DEGREE;			//for the leaf node
+
+		cur->setN(len);//set the number of key
+		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		PMODIFY moveChild = child;
 		while (n > MAX_DEGREE) {
 			buf = moveChild->getL();
-			for (i = 0; i < MIN_DEGREE; i++, j++)
+			for (i = 0; i < len; i++, j++)
 				buf->setK(i, buffer[j]);
-			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, MIN_DEGREE, cur->getL())));
+			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, len, cur->getL())));
 			moveChild = moveChild->getN();
-			n -= MIN_DEGREE;
+			n -= len;
 		}
+		moveChild->getL()->setN(n);//set the number of key
 		buf = moveChild->getL();
 		for (i = 0; n > 0; i++, j++, n--)
 			buf->setK(i, buffer[j]);
-		lock_guard<mutex> guard(protectList);	//protect the modifyList
-		infoIter step = modifyList.find(parent);
-		if (step != modifyList.end())
-			modifyList[parent] = child;
-		else {
-			moveChild->setN((PMODIFY)step->second);
-			step->second = child;
-		}
-		//big - split();
-	}
-	else if (n < MIN_DEGREE) {
-		PMODIFY child = new MODIFY(DEL_STEP, buffer[j], cur);
-		for (; n > 0; j++, n--)
-			cur->setK(j, buffer[j]);
-		lock_guard<mutex> guard(protectList);	//protect the modifyList
-		infoIter step = modifyList.find(parent);
-		if (step != modifyList.end())
-			modifyList[parent] = child;
-		else {
-			child->setN((PMODIFY)step->second);
-			step->second = child;
-		}
-		//merge();
+
+		outputModify(parent, child);//test;
+
+		pushModify(parent, child, moveChild);
 	}
 	else {
-		PMODIFY child = new MODIFY(UPD_STEP, buffer[j], cur);
+		cur->setN(n);//set the number of key
 		for (; n > 0; j++, n--)
 			cur->setK(j, buffer[j]);
-		lock_guard<mutex> guard(protectList);	//protect the modifyList
-		infoIter step = modifyList.find(parent);
-		if (step != modifyList.end())
-			modifyList[parent] = child;
-		else {
-			child->setN((PMODIFY)step->second);
-			step->second = child;
-		}
+
+		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		if (n < MIN_DEGREE) child->setT(DEL_STEP);
+
+		outputModify(parent, child);//test;
+
+		pushModify(parent, child, child);
 		//update();
 	}
 	//cout << "Out position " << p << "\n";
+}
+
+template<typename keyType>
+void batree<keyType>::getBuffer(infoIter inf, keyType* buffer, int& n, INDEX p) {
+	if (p == 0) {
+		PINFO ope = (PINFO)inf->second, move;
+		int i;
+		while (ope) {
+			keyType key = ope->getK();
+			i = inBuffer(buffer, key, n);
+			if (ope->getT() == INS_STEP) {
+				if (i == n)	//push into the last position
+					buffer[n++] = key;
+			}
+			else if (ope->getT() == DEL_STEP) {
+				if (i < n)
+					swap(buffer[i], buffer[--n]);
+			}
+			else if (ope->getT() == UPD_STEP) {
+				//
+			}
+			move = ope->getN();
+			delete ope; //free the room
+			ope = move;
+		}
+
+	}
+	else {
+		PMODIFY ope = (PMODIFY)inf->second, move;
+		int i;
+		while (ope) {
+			keyType key = ope->getK();
+			i = inBuffer(buffer, key, n);
+			if (ope->getT() == INS_STEP) {
+				if (i == n)	//push into the last position
+					buffer[n++] = key;
+			}
+			else if (ope->getT() == DEL_STEP) {
+				if (i < n)
+					swap(buffer[i], buffer[--n]);
+			}
+			else if (ope->getT() == UPD_STEP) {
+				//
+			}
+			move = ope->getN();
+			delete ope; //free the room
+			ope = move;
+		}
+	}
+}
+
+template<typename keyType>
+void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild){
+	lock_guard<mutex> guard(protectList);	//protect the modifyList
+	infoIter step = modifyList.find(parent);
+	if (step != modifyList.end())
+		modifyList[parent] = child;
+	else {
+		PMODIFY head = (PMODIFY)step->second;
+		keyType ck = child->getL()->getK(0);
+		if (ck < head->getL()->getK(0)) {
+			moveChild->setN(head);
+			step->second = child;
+		}
+		else {
+			PMODIFY pre = head;
+			head = head->getN();
+			while (head) {
+				if (ck < head->getL()->getK(0))
+					break;
+				pre = head;
+				head = head->getN();
+			}
+			pre->setN(child);
+			moveChild->setN(head);
+		}
+	}
+}
+
+template<typename keyType>
+void batree<keyType>::outputModify(PNODE parent, PMODIFY child) {
+	char name[30];
+	sprintf(name, "%d.txt", parent);
+	ofstream out(name, ios::app);
+	out << parent <<" is being modified!\n";
+	out << child;
+	out.close();
+	return;
 }
 
 template<typename keyType>
