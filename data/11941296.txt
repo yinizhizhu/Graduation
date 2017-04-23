@@ -1,0 +1,23 @@
+0x00B635B0 20 22  is being modified!
+0x00B64F48:
+	upd 18: 0x00B63478 18 19 
+
+0x00B635B0 20 22  is being modified!
+0x00B64D88:
+	del 20: 0x00B63410 20 
+
+0x00B635B0 20 22  is being modified!
+0x00B64E08:
+	upd 24: 0x00B634E0 24 25 
+	ins 29: 0x00B63340 29 31 
+	ins 35: 0x00B63618 35 39 
+	ins 40: 0x00B63680 40 47 
+	ins 50: 0x00B636E8 50 53 
+	ins 56: 0x00B63270 56 61 
+	ins 64: 0x00B63750 64 66 
+	ins 68: 0x00B632D8 68 70 
+	ins 73: 0x00B916B0 73 74 
+	ins 77: 0x00B914A8 77 81 
+	ins 84: 0x00B912A0 84 86 
+	ins 88: 0x00B90C88 88 90 91 93 97 
+
