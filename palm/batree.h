@@ -179,8 +179,11 @@ private:
 	mutex protectList;	//protect the modifyList
 	unordered_map<void*, void*> modifyList;
 
-	vector<thread> threads;	//store the threads
-	vector<thread::id> threadsId;
+	vector<thread>		threads;	//store the threads
+	vector<thread::id>	threadsId;
+
+	mutex protectOrp;
+	vector<keyType>		orphanedKey;	//collect the key which is left when their node is removed
 public:
 	batree();
 	~batree();
@@ -192,13 +195,15 @@ public:
 	void	outputInfo(char*	fileName);	//output the info into file
 	void	palm();					//palm operation for this BPlus tree
 	int		getDeep();										//support the palm
-	void	handleRoot();									//support the palm
+	void	handleRoot(infoIter	ope, INDEX	p);									//support the palm
 	void	modifyNode(infoIter	inf, INDEX	p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
 	int		inParent(PNODE	key, PNODE	parent);
 	int		inBuffer(vector<keyType>&	buffer, keyType	key);	//support the modifynode
 	void	getBuffer(vector<PNODE>&	child, infoIter	inf,
 		vector<keyType>&	buffer, INDEX	p);	//suppor the modifyNode
 	void	soft(vector<PNODE>&	child, vector<keyType>&	buffer);
+	void	collect(PNODE head);
+	void	showOrp();
 	int		check(vector<PNODE>&	child);
 	void	testMS();
 	void	merge(keyType	key, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
@@ -208,7 +213,7 @@ public:
 	void	outputModify(PNODE	parent, PMODIFY	child);		//Just for testing
 	void	swap(keyType&	a, keyType&	b);					//support the modifynode
 	void	showChildB(vector<PNODE>&	childBuf);									//test the childBuf in modifynode
-	void	showBuffer(vector<keyType>&	buffer);			//test the buffer in modifynode
+	void	showBuffer(vector<keyType>&	buffer, vector<PNODE>& child);			//test the buffer in modifynode
 	void	find(INDEX	p);				//testing for finding
 	void*	findLeaf(keyType	k);							//get the leaf node pointer
 	bool	search(keyType	k);								//search k in root
