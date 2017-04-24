@@ -41,10 +41,11 @@ void testDel(batree<int>& r, int n) {
 int main() {
 	cout << "Main thread_id: " << this_thread::get_id() << "\n";
 	batree<int> r;
-	testInsert(r, 9 * DEGREE);
+	r.getTree();
+	//testInsert(r, 9 * DEGREE);
 	//testSearch(r, 10 * DEGREE);
-	r.palm();
-	//r.test(18);
+	//r.palm();
+	r.test(18);
 	//testDel(r, 9 * DEGREE + 1);
 	return 0;
 }

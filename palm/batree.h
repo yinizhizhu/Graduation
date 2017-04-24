@@ -1,10 +1,10 @@
 #pragma once
 #ifndef BATREE_H
 #define BATREE_H
-#include <mutex>
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <mutex>
 #include <vector>
 #include <thread>
 #include <random>
@@ -32,7 +32,7 @@ using namespace std;
 #define	IRESULT_FILE_NAME	"infoResult.txt"
 typedef unsigned int INDEX;
 
-//#define NULL_STEP	0x0000
+//#define	NULL_STEP	0x0000
 //#define	ADD_STEP	0x0001
 //#define	DEL_STEP	0x0002
 //#define	FIND_STEP	0x0004
@@ -152,10 +152,11 @@ private:
 		modify*		next;
 		modify(STEP_TYPE t, keyType k, PNODE l, modify* n = NULL) : 
 			type(t), key(k), leaf(l), next(n) {}
-		STEP_TYPE	getT() { return type; }
 		void		setT(STEP_TYPE s) { type = s; }
+		void		setL(PNODE l) { leaf = l; }
 		void		setN(modify* n) { next = n; }
 		void		setO(keyType o) { old = o; }
+		STEP_TYPE	getT() { return type; }
 		keyType		getK() { return key; }
 		PNODE		getL() { return leaf; }
 		modify*		getN() { return next; }
@@ -185,36 +186,40 @@ public:
 	~batree();
 	batree(batree const&) = delete;
 	batree& operator=(batree const&) = delete;
-	void fastRandom();				//get the query randomly
-	void outputQuery(char* fileName);	//output the query into file
-	void outputInfo(char* fileName);	//output the info into file
-	void palm();					//palm operation for this BPlus tree
-	int getDeep();										//support the palm
-	void handleRoot();									//support the palm
-	void modifyNode(infoIter inf, INDEX p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
-	int inParent(keyType key, PNODE parent);
-	void getBuffer(vector<PNODE>& child, infoIter inf, keyType* buffer, int& n, INDEX p);	//suppor the modifyNode
-	void pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild);	//support the modifynode
-	void outputModify(PNODE parent, PMODIFY child);		//Just for testing
-	int inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode
-	void swap(keyType& a, keyType& b);					//support the modifynode
-	void showBuffer(keyType* buffer, int n);			//test the buffer in modifynode
-	void find(INDEX p);				//testing for finding
-	void* findLeaf(keyType k);							//get the leaf node pointer
-	bool search(keyType k);								//search k in root
-	void split(PNODE x, int i);							//split the child whose index is i of node x
-	void insertNon(PNODE x, keyType k);					//insert the k into the subtree whose root is node x
-	void insert(keyType k);								//insert the k into root
-	void merge(PNODE x, INDEX i, PNODE y, PNODE z);		//merge node y, key i and node z, x is the parent of y and z
-	void del(keyType k);								//delete the k from root
-	void delNon(PNODE x, keyType k);					//delete the k from the subtree whose root is node x
-	void delSet(keyType k, keyType v);					//revalue the index while the head is changed
-	void shiftRTL(PNODE x, INDEX i, PNODE y, PNODE z);	//x's right child y borrows a key and a child from x's left child of z
-	void shiftLTR(PNODE x, INDEX i, PNODE y, PNODE z);	//...
-	void doShow(PNODE root, int d);
-	void show();										//API for showing the btrees
-	void test(keyType n);			//test the parent
-	void doClear(PNODE root);
-	void clear();										//API for free the sources we apply
+	void	getTree();
+	void	fastRandom();				//get the query randomly
+	void	outputQuery(char* fileName);	//output the query into file
+	void	outputInfo(char* fileName);	//output the info into file
+	void	palm();					//palm operation for this BPlus tree
+	int		getDeep();										//support the palm
+	void	handleRoot();									//support the palm
+	void	modifyNode(infoIter inf, INDEX p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
+	int		inParent(keyType key, PNODE parent);
+	int		inBuffer(keyType* buffer, keyType key, int n);	//support the modifynode
+	void	getBuffer(vector<PNODE>& child, infoIter inf, keyType* buffer, int& n, INDEX p);	//suppor the modifyNode
+	void	soft(vector<PNODE>& child, keyType* buffer, int& n);
+	int		check(vector<PNODE>& child);
+	void	merge(keyType key, PNODE y, PNODE z);		//merge node y, key i and node z, x is the parent of y and z
+	void	shiftRTL(PNODE x, INDEX i, PNODE y, PNODE z);	//x's right child y borrows a key and a child from x's left child of z
+	void	shiftLTR(PNODE x, INDEX i, PNODE y, PNODE z);	//...
+	void	pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild);	//support the modifynode
+	void	outputModify(PNODE parent, PMODIFY child);		//Just for testing
+	void	swap(keyType& a, keyType& b);					//support the modifynode
+	void	showChildB(vector<PNODE>& childBuf);									//test the childBuf in modifynode
+	void	showBuffer(keyType* buffer, int n);			//test the buffer in modifynode
+	void	find(INDEX p);				//testing for finding
+	void*	findLeaf(keyType k);							//get the leaf node pointer
+	bool	search(keyType k);								//search k in root
+	//void	split(PNODE x, int i);							//split the child whose index is i of node x
+	//void	insertNon(PNODE x, keyType k);					//insert the k into the subtree whose root is node x
+	//void	insert(keyType k);								//insert the k into root
+	//void	del(keyType k);								//delete the k from root
+	//void	delNon(PNODE x, keyType k);					//delete the k from the subtree whose root is node x
+	//void	delSet(keyType k, keyType v);					//revalue the index while the head is changed
+	void	doShow(PNODE root, int d);
+	void	show();										//API for showing the btrees
+	void	test(keyType n);			//test the parent
+	void	doClear(PNODE root);
+	void	clear();										//API for free the sources we apply
 };
 #endif
