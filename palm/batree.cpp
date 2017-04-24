@@ -13,7 +13,9 @@ batree<keyType>::batree() {	//initial
 template<typename keyType>
 batree<keyType>::~batree() {	//free the sources
 	//cout << "In clean\n";
+	//cout << "IN Clean\n";
 	clear();
+	//cout << "FUCK!\n";
 	//show();//test
 	delete root;
 
@@ -393,71 +395,110 @@ int batree<keyType>::check(vector<PNODE>& child) {
 }
 
 template<typename keyType>
+void batree<keyType>::testMS() {
+	cout << endl;
+	cout << "\tmerge 18:\n";
+	root->setN(2);
+	merge(18, root->getC(2), root->getC(3));
+	show();
+	cout << endl;
+	cout << "\tmerge 4:\n";
+	PNODE tmp = root->getC(0);
+	tmp->setN(1);
+	merge(4, tmp->getC(1), tmp->getC(2));
+	show();
+	cout << endl;
+	cout << tmp->key[0] << "\tRTL 3:\n";
+	shiftRTL(tmp->key[0], 3, tmp->getC(0), tmp->getC(1));
+	show();
+	cout << endl;
+	cout << tmp->key[0] << "\tLTR 3:\n";
+	shiftLTR(tmp->key[0], 4, tmp->getC(0), tmp->getC(1));
+	show();
+	cout << endl;
+	cout << root->key[1] << "\tRTL 3:\n";
+	shiftRTL(root->key[1], 3, root->getC(1), root->getC(2));
+	show();
+	cout << endl;
+	cout << root->key[1] << "\tLTR 3:\n";
+	shiftLTR(root->key[1], 2, root->getC(1), root->getC(2));
+	show();
+}
+
+template<typename keyType>
 void batree<keyType>::merge(keyType key, PNODE y, PNODE z) {
 	//y - left node, z - right node
-	doShow(y, 0);
-	doShow(z, 0);
 	int i = y->getN(), j = 0, n = z->getN();
-	if (!y->getL()) {	//inner node
+	if (!y->getL())	//inner node
 		y->setK(i++, key);
-		y->setN(y->getN() + n + 1);
-	}
-	else
-		y->setN(y->getN() + n);
-	for (; j < n; j++)
+	for (; j < n; i++, j++)
 		y->setK(i, z->getK(j));
 	if (!y->getL()) {	//inner node
 		for (i = y->getN() + 1, j = 0; j <= n; j++, i++)
 			y->setC(i, z->getC(j));
 	}
+	if (!y->getL())	//inner node
+		y->setN(y->getN() + n + 1);
+	else
+		y->setN(y->getN() + n);
 	delete z;
-	doShow(y, 0);
 	//show();//test
 }
 
 template<typename keyType>
-void batree<keyType>::shiftLTR(PNODE x, INDEX i, PNODE y, PNODE z) {//x's right child y borrows a key and a child from x's left child of z
-	//i: the index of key in x, y: left child of x, z: right child of x
-	int j = z->getN();
-	for (; j > 0; j--)
-		z->setK(j, z->getK(j - 1));
-	if (y->getL()) {
-		z->setK(0, y->getK(y->getN() - 1));
-		x->setK(i, z->getK(0));
+void batree<keyType>::shiftLTR(keyType& key, int n, PNODE y, PNODE z) {
+	//z borrows n nodes from y
+	int i = z->getN();
+	z->setN(i + n);
+	z->setC(i + n, z->getC(i));
+	for (--i; i >= 0; i--) {
+		z->setK(i + n, z->getK(i));
+		z->setC(i + n, z->getC(i));
 	}
-	else {
-		z->setK(0, x->getK(i));
-		x->setK(i, y->getK(y->getN() - 1));
+
+	int k = y->getN(), j = n - 1;
+	y->setN(k - n);
+	i = k - 1;
+	if (!y->getL()) { //inner node
+		z->setK(j, key);
+		z->setC(j, y->getC(k));
+		j--, k--;
 	}
-	if (!z->getL()) {
-		for (j = z->getN(); j >= 0; j--)
-			z->setC(j + 1, z->getC(j));
-		z->setC(0, y->getC(y->getN()));
+	for (; j >= 0; i--, j--, k--) {
+		z->setK(j, y->getK(i));
+		z->setC(j, y->getC(k));
 	}
-	z->setN(z->getN() + 1);
-	y->setN(y->getN() - 1);
+	if (!y->getL()) //inner node
+		key = y->getK(i);
+	else
+		key = z->getK(0);
 }
 
 template<typename keyType>
-void batree<keyType>::shiftRTL(PNODE x, INDEX i, PNODE y, PNODE z) {//...
-	//i: the index of key in x, y: left child of x, z: right child of x
-	int n = y->getN();
-	if (y->getL()) {
-		y->setK(n, z->getK(0));
-		x->setK(i, z->getK(1));
+void batree<keyType>::shiftRTL(keyType& key, int n, PNODE y, PNODE z) {
+	//y borrows n nodes from z
+	int i = y->getN(), move = 0, j = 0, k = 0;
+	y->setN(i + n);
+	if (!y->getL()) { //inner
+		y->setK(i, key);
+		y->setC(i + 1, z->getC(k));
+		i++, k++;
+		move++;
 	}
-	else {
-		y->setK(n, x->getK(i));
-		x->setK(i, z->getK(0));
+	for (; move < n; move++, i++, j++, k++) {
+		y->setK(i, z->getK(j));
+		y->setC(i + 1, z->getC(k));
 	}
-	for (int k = 1; k < z->getN(); k++)
-		z->setK(k - 1, z->getK(k));
-	y->setC(n + 1, z->getC(0));
-	if (!z->getL())
-		for (int k = 1; k <= z->getN(); k++)
-			z->setC(k - 1, z->getC(k));
-	y->setN(n + 1);
-	z->setN(z->getN() - 1);
+	key = z->getK(j);
+	if (!y->getL())
+		j++;
+	i = z->getN();
+	z->setN(i - n);
+	for (; j < i; j++, k++) {
+		z->setK(j - n, z->getK(j));
+		z->setC(j - n, z->getC(k));
+	}
+	z->setC(j - n, z->getC(k));
 }
 
 template<typename keyType>
@@ -740,7 +781,7 @@ void batree<keyType>::show() {//API for showing the btrees
 }
 
 template<typename keyType>
-void batree<keyType>::test(keyType n) {//API for showing the btrees
+void batree<keyType>::testParent(keyType n) {//API for showing the btrees
 	PNODE tmp = (PNODE)findLeaf(n);
 	while (tmp) {
 		int i, n = tmp->getN();
