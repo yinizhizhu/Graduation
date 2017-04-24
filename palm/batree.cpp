@@ -213,20 +213,20 @@ void batree<keyType>::handleRoot() {	//the supporting funciton
 
 template<typename keyType>
 void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funciton
-	cout << "In modify " << p << "\n";
+	cout << "In modify\n";
 
 	vector<PNODE> childBuf;
-	keyType buffer[TEST_NUM];
+	vector<keyType> buffer;
 	PNODE cur = (PNODE)inf->first;
 	int i, n = cur->getN();//just for int
 	for (i = 0; i < n; i++)
-		buffer[i] = cur->getK(i);
+		buffer.push_back(cur->getK(i));
 	//showBuffer(buffer, n);//test
-	getBuffer(childBuf, inf, buffer, n, p);
+	getBuffer(childBuf, inf, buffer, p);
+	n = buffer.size();
+	sort(buffer.begin(), buffer.end());//sorting 
 
-	sort(buffer, buffer + n);//sorting 
-
-	//showBuffer(buffer, n);	//test
+	showBuffer(buffer);	//test
 	//showChildB(childBuf);		//test
 
 	int j = 0, k = 0;
@@ -234,86 +234,105 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 	PNODE parent = cur->getP(), buf;
 	if (n > MAX_DEGREE) {	//	NEED AHNDLE THE DIFFER 
 		//big - split();
-		cur->setN(DEGREE);//set the number of key
+		cur->setN(MIN_DEGREE);//set the number of key
 		child = new MODIFY(UPD_STEP, buffer[j], cur);
-		if (p == 1 && inParent(cur, parent) > 0)
+		if (p == 1 && inParent(cur, parent) > 0) {
 			j++;
+			n--;
+		}
 		child->setO(cur->getK(0));
 		PMODIFY moveChild = child;
 		while (n > MAX_DEGREE) {
 			buf = moveChild->getL();
 			for (i = 0; i < MIN_DEGREE; i++, j++) {
 				buf->setK(i, buffer[j]);
-				buf->setC(i, child[k++]);
+				if (p)
+					buf->setC(i, childBuf[k++]);
 			}
-			buf->setC(i, child[k++]);
+			if (p)
+				buf->setC(i, childBuf[k++]);
 			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, MIN_DEGREE, cur->getL())));
-			if (p == 1)
-				j++;
-			moveChild = moveChild->getN();
 			n -= MIN_DEGREE;
+			if (p == 1) {
+				j++;
+				n--;
+			}
+			moveChild = moveChild->getN();
 		}
-		moveChild->getL()->setN(n);//set the number of key
 		buf = moveChild->getL();
+		buf->setN(n);//set the number of key
 		for (i = 0; n > 0; i++, j++, n--) {
 			buf->setK(i, buffer[j]);
-			buf->setC(i, child[k++]);
+			if (p)
+				buf->setC(i, childBuf[k++]);
 		}
-		buf->setC(i, child[k]);
+		if (p)
+			buf->setC(i, childBuf[k]);
 
 		pushModify(parent, child, moveChild);
 	}
 	else {
-		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		if (n)
+			child = new MODIFY(UPD_STEP, buffer[j], cur);
+		else
+			child = new MODIFY(UPD_STEP, 0, cur);
 		child->setO(cur->getK(0));
 		if (n < MIN_DEGREE) child->setT(DEL_STEP);
 
 		cur->setN(n);//set the number of key
-		for (; n > 0; j++, n--) {
-			buf->setK(i, buffer[j]);
-			buf->setC(i, child[k++]);
+		for (i = 0; n > 0; i++, j++, n--) {
+			cur->setK(i, buffer[j]);
+			if (p)
+				cur->setC(i, childBuf[k++]);
 		}
-		buf->setC(i, child[k]);
+		if (p)
+			cur->setC(i, childBuf[k]);
 
 		pushModify(parent, child, child);
 		//update();
 	}
-	cout << "Out modify!!! " << p << "\n";
+	cout << "Out modify!!!\n";
 }
 
 template<typename keyType>
 int batree<keyType>::inParent(PNODE child, PNODE parent) {	//Done
 	int n = parent->getN();
 	for (int i = 0; i <= n; i++)
-		if (cur == parent->getC(i))
+		if (child == parent->getC(i))
 			return i;
 	return -1;
 }
 
 template<typename keyType>
-int batree<keyType>::inBuffer(keyType* buffer, keyType key, int n) {
-	int i = 0;
+int batree<keyType>::inBuffer(vector<keyType>& buffer, keyType key) {
+	int i = 0, n = buffer.size();
 	for (; i < n; i++)
 		if (buffer[i] == key)
-			return i;
-	return -1;
+			break;
+	return i;
 }
 
 template<typename keyType>
-void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, keyType* buffer, int& n, INDEX p) {
+void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, vector<keyType>& buffer, INDEX p) {
+	cout << "In getBuffer\n";
 	if (p == 0) {
 		PINFO ope = (PINFO)inf->second, move;
 		int i;
 		while (ope) {
 			keyType key = ope->getK();
-			i = inBuffer(buffer, key, n);
-			if (ope->getT() == INS_STEP) {
-				if (i == n)	//push into the last position
-					buffer[n++] = key;
-			}
-			else if (ope->getT() == DEL_STEP) {
-				if (i < n)
-					swap(buffer[i], buffer[--n]);
+			i = inBuffer(buffer, key);
+			switch (ope->getT()) {
+			case INS_STEP:
+				if (i == (int)buffer.size())	//push into the last position
+					buffer.push_back(key);
+				break;
+			case DEL_STEP:
+				if (i < (int)buffer.size()) {
+					swap(buffer[i], buffer[buffer.size() - 1]);
+					buffer.erase(buffer.begin() + buffer.size() - 1);
+				}
+				break;
+			default: break;
 			}
 			move = ope->getN();
 			delete ope; //free the room
@@ -327,67 +346,89 @@ void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, keyType* buf
 		while (ope) {
 			keyType key = ope->getK();
 			move = ope->getN();
-			if (ope->getT() == INS_STEP) {
-				buffer[n++] = key;
-				child.push_back(ope->getL());
-				delete ope; //free the room
-			}
-			else if (ope->getT() == DEL_STEP) {//PROBLEM: for head
-				i = inBuffer(buffer, key, n);
-				if (ope->getL()->getN() == 0)
-					swap(buffer[i], buffer[--n]);
-				else {
-					child.push_back(ope->getL());	//get the children: j need to tag
-					j++;
-				}
-				delete ope; //free the room
-			}
-			else if (ope->getT() == UPD_STEP) {	// for head
-				if (ope->getL()) {
-					i = inParent(ope->getL(), cur);
-					if (i >= 0) {		//update in current node
-						for (; j < i; j++)
-							child.push_back(cur->getC(j));
-						child.push_back(ope->getL());	//get the children: j need to tag
-						j++;
-					}
-					else {				//update in inner node
-						ope->setL(NULL);
-						ope->setN(NULL);
-						pushModify(cur->getP(), ope, ope);//store the update info
-					}
-				}
-				i = inBuffer(buffer, ope->getO(), n);
-				if (i >= 0) {
-					buffer[i] = key;
+			switch(ope->getT()) {
+				case INS_STEP:
+					buffer.push_back(key);
+					child.push_back(ope->getL());
 					delete ope; //free the room
-				}
+					break;
+				case DEL_STEP:
+					if (ope->getL()->getN() == 0){
+						i = inBuffer(buffer, ope->getO());
+						swap(buffer[i], buffer[buffer.size() - 1]);
+						buffer.erase(buffer.begin() + buffer.size() - 1);
+					}
+					else {
+						i = inParent(ope->getL(), cur);
+						for (; j <= i; j++)
+							child.push_back(cur->getC(j));	//get the children: j need to tag
+					}
+					delete ope; //free the room
+					break;
+				case UPD_STEP:
+					if (ope->getL()) {
+						i = inParent(ope->getL(), cur);
+						if (i >= 0) {		//update in current node
+							for (; j <= i; j++)
+								child.push_back(cur->getC(j));
+						}
+						else {				//update in inner node
+							ope->setL(NULL);
+							ope->setN(NULL);
+							pushModify(cur->getP(), ope, ope);//store the update info
+						}
+					}
+					i = inBuffer(buffer, ope->getO());
+					if (i < (int)buffer.size()) {
+						buffer[i] = key;
+						delete ope; //free the room
+					}
+					break;
+				default: break;
 			}
 			ope = move;
 		}
-		soft(child, buffer, n);	//it is import to maintain the structure of BPlus Trees
+		soft(child, buffer);	//it is import to maintain the structure of BPlus Trees
+		cout << "*****"<< child.size() - buffer.size() << "*****\n";
 	}
+	cout << "Out getBuffer!!!\n";
 }
 
 template<typename keyType>
-void batree<keyType>::soft(vector<PNODE>& child, keyType* buffer, int& n) {	//BIG TROUBLE
-	while (check(child) && n > 1) {
-		int i = 1;
-		for (; i < n;) {
-			if (child[i - 1]getN() + child[i]->getN() <= MAX_DEGREE) {	//merge, shiftLTR, shiftRTL
-				merge(buffer[i - 1], child[i - 1], child[i]);
-				child.erase(child.begin() + i);
-				n--;
-			}
-			else i++;
+void batree<keyType>::soft(vector<PNODE>& child, vector<keyType>& buffer) {	//BIG TROUBLE
+	cout << "In soft:\t" << child.size() << ", " << buffer.size() << endl; 
+	bool leaf;
+	if (buffer.size())
+		leaf = child[0]->getL();
+	while (buffer.size() > 1 && child[0]->getN() < MIN_DEGREE) {
+		if ((leaf && child[0]->getN() + child[1]->getN() <= MAX_DEGREE)
+			|| (!leaf && child[0]->getN() + child[1]->getN() <= MAX_DEGREE - 1)) {
+			merge(buffer[0], child[0], child[1]);
+			buffer.erase(buffer.begin());
+			child.erase(child.begin() + 1);
 		}
+		else
+			shiftRTL(buffer[0], MIN_DEGREE - child[0]->getN(), child[0], child[1]);
 	}
+	int i = check(child);
+	while (i > 0 && buffer.size() > 1) {
+		if ((leaf && child[i - 1]->getN() + child[i]->getN() <= MAX_DEGREE)
+			|| (!leaf && child[i - 1]->getN() + child[i]->getN() <= MAX_DEGREE - 1)) {
+			merge(buffer[i - 1], child[i - 1], child[i]);
+			buffer.erase(buffer.begin() + i - 1);
+			child.erase(child.begin() + i);
+		}
+		else
+			shiftLTR(buffer[i - 1], MIN_DEGREE - child[i]->getN(), child[i - 1], child[i]);
+		i = check(child);
+	}
+	cout << "Out soft!!!\n";
 	//showChildB(child);//test for watching the content of child
 }
 
 template<typename keyType>
 int batree<keyType>::check(vector<PNODE>& child) {
-	int i = 0, n = child.size();
+	int i = 1, n = child.size();
 	for (; i < n; i++)
 		if (child[i]->getN() < MIN_DEGREE)
 			return i;
@@ -560,8 +601,9 @@ void batree<keyType>::showChildB(vector<PNODE>& childBuf) {
 }
 
 template<typename keyType>
-void batree<keyType>::showBuffer(keyType* buffer, int n) {
-	int i = 0;
+void batree<keyType>::showBuffer(vector<keyType>& buffer) {
+	int i = 0, n = buffer.size();
+	cout <<"size "<< n << ": ";
 	for (; i < n; i++)
 		cout << buffer[i] << " ";
 	cout << '\n';
