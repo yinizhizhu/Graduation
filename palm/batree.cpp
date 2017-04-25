@@ -45,7 +45,6 @@ batree<keyType>::~batree() {	//free the sources
 
 	threads.clear();
 	threadsId.clear();
-	showOrp();
 	orphanedKey.clear();
 }
 
@@ -142,6 +141,7 @@ void batree<keyType>::outputInfo(char* fileName) {	//output the info
 template<typename keyType>
 void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	//stage 1: search
+	int deep = getDeep();
 	fastRandom();
 	outputQuery(QUERY_FILE_NAME);
 	outputInfo(INFO_FILE_NAME);
@@ -169,8 +169,8 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	outputInfo(IRESULT_FILE_NAME);
 
 	//stage 3: modify-inner-NODE
-	for (int j = 2, deep = getDeep(); j < deep; j++) {
-		cout << "Deep: " << deep << '\n';
+	cout << "Deep: " << deep << '\n';
+	for (int j = 2; j < deep; j++) {
 		threads.clear();
 		move = modifyList.begin();
 		for (i = 0; i < THREAD_NUM && move != modifyList.end(); i++, move++)
@@ -187,11 +187,14 @@ void batree<keyType>::palm() {	//palm operation for this BPlus tree
 	//stage 4: handle the root
 	threads.clear();
 	move = modifyList.begin();
-	if (move != modifyList.end()) {
-		threads.push_back(thread(&batree<keyType>::handleRoot, this, move, 1));
+	while (move != modifyList.end()) {
+		threads.push_back(thread(&batree<keyType>::handleRoot, this, move, deep - 1));
 		threads[0].join();
 		modifyList.erase(move);
+		move = modifyList.begin();
 	}
+	show();
+	showOrp();
 }
 
 template<typename keyType>
@@ -202,64 +205,78 @@ int batree<keyType>::getDeep() {
 }
 
 template<typename keyType>
-void batree<keyType>::handleRoot(infoIter inf, INDEX	p) {	//the supporting funciton
+void batree<keyType>::handleRoot(infoIter inf, INDEX p) {	//the supporting funciton
 	cout << "In handleRoot\n";
 	vector<PNODE> childBuf;
 	vector<keyType> buffer;
-	int i, n = root->getN();//just for int
+	PNODE cur = root;
+	int i, n = cur->getN();//just for int
 	for (i = 0; i < n; i++)
-		buffer.push_back(root->getK(i));
-
+		buffer.push_back(cur->getK(i));
+	//showBuffer(buffer, n);//test
 	getBuffer(childBuf, inf, buffer, p);
 	n = buffer.size();
 	sort(buffer.begin(), buffer.end());//sorting 
-	//showBuffer(buffer, childBuf);	//test
+	showBuffer(buffer, childBuf);	//test
+	//showChildB(childBuf);		//test
 
 	int j = 0, k = 0;
-	PMODIFY child = NULL;
 	if (n > MAX_DEGREE) {	//	NEED AHNDLE THE DIFFER 
 		cout << "Fuck1\n";
 		//big - split();
-		PNODE cur = new NODE();
-		cur->setN(1);
-		cur->setK(0, buffer[DEGREE]);
-		cur->setC(0, root);
-		root->setP(cur);
-		root->setN(MIN_DEGREE);
-		for (i = 0; i < MIN_DEGREE; i++, j++) {
-			root->setK(i, buffer[j]);
-			if (p)
-				root->setC(i, childBuf[k++]);
-		}
-		if (p)
-			root->setC(i, childBuf[k++]);
-		n -= MIN_DEGREE;
-		if (p == 1) {
+		PMODIFY child = NULL;
+		PNODE parent = new NODE(NULL, 1, false), buf;
+		root = parent;	//new root: deeper
+		parent->setC(0, cur);
+
+		cur->setN(MIN_DEGREE);//set the number of key
+		child = new MODIFY(UPD_STEP, buffer[j], cur);
+		if (p && inParent(cur, parent) > 0) {
 			j++;
 			n--;
 		}
-		root = cur;
-		cur = new NODE(root, MIN_DEGREE, root->getC(0)->getL());
-		for (i = 0; i < MIN_DEGREE; i++, j++) {
-			root->setK(i, buffer[j]);
+		PMODIFY moveChild = child;
+		while (n > MAX_DEGREE) {
+			buf = moveChild->getL();
+			for (i = 0; i < MIN_DEGREE; i++, j++) {
+				buf->setK(i, buffer[j]);
+				if (p)
+					buf->setC(i, childBuf[k++]);
+			}
 			if (p)
-				root->setC(i, childBuf[k++]);
+				buf->setC(i, childBuf[k++]);
 			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, MIN_DEGREE, cur->getL())));
-			if (p == 1) {
+			n -= MIN_DEGREE;
+			if (p) {
 				j++;
 				n--;
 			}
+			moveChild = moveChild->getN();
+		}
+		buf = moveChild->getL();
+		buf->setN(n);//set the number of key
+		for (i = 0; n > 0; i++, j++, n--) {
+			buf->setK(i, buffer[j]);
+			if (p)
+				buf->setC(i, childBuf[k++]);
 		}
 		if (p)
-			root->setC(i, childBuf[k++]);
-		n -= DEGREE;
+			buf->setC(i, childBuf[k]);
 
-
+		PMODIFY tmp = child->getN();
+		tmp->setT(UPD_STEP);
+		parent->setC(1, tmp->getL());
+		parent->setK(0, tmp->getK());
+		delete child;
+		child = tmp;
+		if (tmp == moveChild)
+			delete child;
+		else
+			pushModify(parent, child, moveChild);
 		cout << "Fuck1!!!!!!!!\n";
 	}
 	else {
 		cout << "Fuck2\n";
-		PNODE cur = root;
 		if (n == 0) {	//lower
 			root = childBuf[0];
 			root->setP(NULL);
@@ -305,7 +322,7 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 		//big - split();
 		cur->setN(MIN_DEGREE);//set the number of key
 		child = new MODIFY(UPD_STEP, buffer[j], cur);
-		if (p == 1 && inParent(cur, parent) > 0) {
+		if (p && inParent(cur, parent) > 0) {
 			j++;
 			n--;
 		}
@@ -322,7 +339,7 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 				buf->setC(i, childBuf[k++]);
 			moveChild->setN(new MODIFY(INS_STEP, buffer[j], new NODE(parent, MIN_DEGREE, cur->getL())));
 			n -= MIN_DEGREE;
-			if (p == 1) {
+			if (p) {
 				j++;
 				n--;
 			}
