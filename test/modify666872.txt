@@ -1,0 +1,8 @@
+0x000A2CF8 6 12 18  is being modified!
+0x000C72F8:
+	del 4: 0x000A1A30 4 
+	upd 20->20: 0x000A3D50 20 24 
+	ins 29: 0x000C65F8 35 40 
+	ins 50: 0x000C63F0 56 64 
+	ins 68: 0x000C64C0 73 77 84 88 
+
