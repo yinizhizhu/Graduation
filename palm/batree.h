@@ -25,11 +25,12 @@ using namespace std;
 #define	EACH_NUM	9
 #define	THREAD_NUM	4
 
+#define TREE_FILE_NAME					"bplus.txt"
 #define	SYNCHRONIZING_MUTEX_NAME	"__PALM_MUTEX__"
-#define	QUERY_FILE_NAME		"query.txt"
-#define	QRESULT_FILE_NAME	"queryResult.txt"
-#define	INFO_FILE_NAME		"info.txt"
-#define	IRESULT_FILE_NAME	"infoResult.txt"
+#define	QUERY_FILE_NAME				"query.txt"
+#define	QRESULT_FILE_NAME			"queryResult.txt"
+#define	INFO_FILE_NAME				"info.txt"
+#define	IRESULT_FILE_NAME			"infoResult.txt"
 typedef unsigned int INDEX;
 
 //#define	NULL_STEP	0x0000
@@ -168,6 +169,8 @@ private:
 		while (move) {
 			os << "\t";
 			os << move->type << " ";
+			if (move->type == UPD_STEP)
+				os << move->old << "->";
 			os << move->key << ": ";
 			os << move->leaf << '\n';
 			move = move->next;
@@ -223,7 +226,7 @@ public:
 	//void	del(keyType k);								//delete the k from root
 	//void	delNon(PNODE x, keyType k);					//delete the k from the subtree whose root is node x
 	//void	delSet(keyType k, keyType v);					//revalue the index while the head is changed
-	void	doShow(PNODE	root, int	d);
+	void	doShow(ofstream&	out, PNODE	root, int	d);
 	void	show();										//API for showing the btrees
 	void	testParent(keyType	n);			//test the parent
 	void	doClear(PNODE	root);
