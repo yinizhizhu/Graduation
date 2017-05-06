@@ -9,6 +9,7 @@ batree<keyType>::batree() {	//initial
 template<typename keyType>
 batree<keyType>::~batree() {	//free the sources
 	clear();
+	show();
 	delete root;
 }
 
@@ -36,7 +37,7 @@ bool batree<keyType>::search(keyType k) {	//search k in root
 template<typename keyType>
 void batree<keyType>::split(node* x, int i) {	//split the child whose index is i of node x
 	//x - current node, i - the index of node which will be splited
-	int len = DEGREEA - 1, basis = 0;//for the iner node
+	int len = MIN_DEGREE, basis = 0;//for the iner node
 	node* z = new node(), *y = x->getC(i);
 	z->setL(y->getL());
 	if (z->getL()) {//for the leaf node
@@ -45,11 +46,11 @@ void batree<keyType>::split(node* x, int i) {	//split the child whose index is i
 	}
 	z->setN(len);
 	for (int j = 0; j < len; j++)
-		z->setK(j, y->getK(j + DEGREEA + basis));
+		z->setK(j, y->getK(j + DEGREE + basis));
 	if (y->leaf == false)
 		for (int j = 0; j <= len; j++)
-			z->setC(j, y->getC(j + DEGREEA + basis));
-	y->setN(DEGREEA - 1);
+			z->setC(j, y->getC(j + DEGREE + basis));
+	y->setN(MIN_DEGREE);
 	//y->show();//test
 	//z->show();//test
 	for (int j = x->getN(); j > i; j--)
@@ -57,7 +58,7 @@ void batree<keyType>::split(node* x, int i) {	//split the child whose index is i
 	x->setC(i + 1, z);
 	for (int j = x->getN() - 1; j >= i; j--)
 		x->setK(j + 1, x->getK(j));
-	x->setK(i, y->getK(DEGREEA - 1));
+	x->setK(i, y->getK(MIN_DEGREE));
 	x->setN(x->getN() + 1);
 	//x->show(0);//test
 	//cout << endl;//test
@@ -77,7 +78,7 @@ void batree<keyType>::insertNon(node* x, keyType k) {	//insert the k into the su
 	else {
 		while (i >= 0 && k < x->getK(i)) i--;
 		i++;
-		if (x->getC(i)->getN() == 2 * DEGREEA - 1) {
+		if (x->getC(i)->getN() == MAX_DEGREE) {
 			split(x, i);
 			if (k > x->getK(i)) i++;
 		}
@@ -89,7 +90,7 @@ template<typename keyType>
 void batree<keyType>::insert(keyType k) {	//insert the k into root
 	//Before inserting, we split the full node
 	node* r = root;
-	if (2 * DEGREEA - 1 == r->getN()) {
+	if (MAX_DEGREE == r->getN()) {
 		node* s = new node();
 		root = s;
 		s->setN(0);
@@ -104,7 +105,7 @@ void batree<keyType>::insert(keyType k) {	//insert the k into root
 template<typename keyType>
 void batree<keyType>::merge(node* x, int i, node* y, node* z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
-	int j = DEGREEA, basis = 0, len = 2 * DEGREEA - 1;
+	int j = DEGREE, basis = 0, len = MAX_DEGREE;
 	if (y->getL()) {
 		j--;
 		basis++;
@@ -112,11 +113,11 @@ void batree<keyType>::merge(node* x, int i, node* y, node* z) {
 	}
 	y->setN(len);
 	for (; j < len; j++)
-		y->setK(j, z->getK(j - DEGREEA + basis));
+		y->setK(j, z->getK(j - DEGREE + basis));
 	if (!y->getL()) {
-		y->setK(DEGREEA - 1, x->getK(i));
-		for (j = DEGREEA; j < len + 1; j++)
-			y->setC(j, z->getC(j - DEGREEA));
+		y->setK(MIN_DEGREE, x->getK(i));
+		for (j = DEGREE; j < len + 1; j++)
+			y->setC(j, z->getC(j - DEGREE));
 	}
 	for (j = i + 1; j < x->getN(); j++) {
 		x->setK(j - 1, x->getK(j));
@@ -135,7 +136,7 @@ void batree<keyType>::del(keyType k) {	//delete the k from root
 			node* y = root->getC(0);
 			node* z = root->getC(1);
 			int n = y->getN() + z->getN();
-			if (n >= 2 * DEGREEA - 2 && n < 2 * DEGREEA) {
+			if ((!y->getL() && n <= MAX_DEGREE - 1) || (y->getL() && n <= MAX_DEGREE)) {
 				merge(r, 0, y, z);
 				root = y;
 				delete r;
@@ -169,10 +170,10 @@ void batree<keyType>::delNon(node* x, keyType k) {
 	node* z = NULL, *p = NULL, *y = x->getC(i);
 	if (i < x->getN()) z = x->getC(i + 1);
 	if (i > 0) p = x->getC(i - 1);
-	if (y->getN() == DEGREEA - 1) {
-		if (i > 0 && p->getN() >= DEGREEA)//Get: try the left side
+	if (y->getN() == MIN_DEGREE) {
+		if (i > 0 && p->getN() >= DEGREE)//Get: try the left side
 			shiftLTR(x, i - 1, p, y);
-		else if (i < x->getN() && z->getN() >= DEGREEA)//Get: try the right side
+		else if (i < x->getN() && z->getN() >= DEGREE)//Get: try the right side
 			shiftRTL(x, i, y, z);
 		else if (i > 0) {//Merge: try the left side
 			merge(x, i - 1, p, y);

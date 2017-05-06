@@ -5,7 +5,9 @@
 
 using namespace std;
 
-#define DEGREEA 3
+#define DEGREE 3
+#define MIN_DEGREE DEGREE - 1
+#define MAX_DEGREE 2 * DEGREE - 1
 
 template<typename keyType>
 class batree {
@@ -13,10 +15,10 @@ private:
 	struct node {
 		bool	leaf;					//true while current node is leaf node, false for inner node
 		int		key_n;					//the number of the key
-		keyType	key[2 * DEGREEA - 1];	//store the key
-		node*	child[2 * DEGREEA];		//store the pointer of child
+		keyType	key[MAX_DEGREE];	//store the key
+		node*	child[MAX_DEGREE + 1];		//store the pointer of child
 		node() {
-			for (int i = 2 * DEGREEA - 1; i >= 0; i--)
+			for (int i = MAX_DEGREE; i >= 0; i--)
 				child[i] = NULL;
 			leaf = false;
 			key_n = 0;
