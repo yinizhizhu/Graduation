@@ -2,39 +2,109 @@
 
 template<typename keyType>
 batree<keyType>::batree() {	//initial
-	root = new node();
-	root->setL(true);	//start with leaf
+	root = new node(0, true);
 	queries.resize(THREAD_NUM);
-	threadsId.resize(THREAD_NUM);
 
 	ofstream out(TREE_FILE_NAME);
 	out.close();
+	ofstream out2(QUERY_FILE_NAME);
+	out2.close();
 }
 
 template<typename keyType>
 batree<keyType>::~batree() {	//free the sources
 	clear();
+}
+
+template<typename keyType>
+void batree<keyType>::getTree() {
+	PNODE move = root;
+	move->setL(false);
+	move->setN(3);
+	move->setK(0, 6);
+	move->setK(1, 12);
+	move->setK(2, 18);
+	for (int i = 0, j = 2, k = 0; i <= 3; i++, j += 6) {
+		PNODE tmp = new node(2, false);
+		tmp->setK(0, j);
+		tmp->setK(1, j + 2);
+		for (int p = 0; p < 3; p++) {
+			int n = 2;
+			if (k == 22) n = 5;
+			PNODE one = new node(n, true);
+			for (int m = 0; m < n; m++)
+				one->setK(m, k++);
+			tmp->setC(p, one);
+		}
+		move->setC(i, tmp);
+	}
 	show();
-	delete root;
 }
 
 template<typename keyType>
 void batree<keyType>::fastRandom() {	//get the query randomly
-	for (int i = 0; i < THREAD_NUM; i++)
-		for (int j = 0; j < EACH_NUM; j++)
+	cout << "In fastRandom\n";
+	int i, j;
+	for (i = 0; i < THREAD_NUM; i++)
+		for (j = 0; j < EACH_NUM; j++)
 			queries[i].push_back(QUERY((STEP_TYPE)(rand() % 3), rand() % 18));
 	outputQuery(QUERY_FILE_NAME);
+	vector< vector<int> > index(2);
+	for (j = 0; j < EACH_NUM; j++) {
+		cout << "Mid fastRandom:" << j << "\n";
+		for (i = 0; i < THREAD_NUM; i++) {
+			switch (queries[i][j].type) {
+			case FIN_STEP:
+				index[0].push_back(i);
+				break;
+			case INS_STEP:
+			case DEL_STEP:
+				index[1].push_back(i);
+				break;
+			default:
+				cout << "What The Fuck!\n";
+				break;
+			}
+		}
+		i = index[0].size() - 1;
+		if (i >= 0) {
+			cout << i << ":\n";
+			for (; i >= 0; i--) {
+				threads.push_back(thread(&batree<keyType>::search, this, index[0][i], j));
+				if (queries[index[0][i]][j].ans)
+					cout << "Get " << queries[index[0][i]][j].key << "\n";
+			}
+			for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
+			threads.clear();
+			index[0].clear();
+		}
+		i = index[1].size() - 1;
+		if (i >= 0) {
+			for (; i >= 0; i--) {
+				if (queries[index[1][i]][j].type == INS_STEP)
+					thread(&batree<keyType>::insert, this, index[1][i], j).join();
+				else
+					thread(&batree<keyType>::del, this, index[1][i], j).join();
+			}
+			index[1].clear();
+		}
+		cout << "Out Mid " << j << "!!!\n";
+	}
+	outputQuery(QRESULT_FILE_NAME);
+	cout << "Out fastRandom!!!\n";
 }
 
 template<typename keyType>
 void batree<keyType>::outputQuery(char* fileName) {	//output the query
 	ofstream out(fileName);
 	for (int i = 0; i < THREAD_NUM; i++) {
-		out << i << " - " << threadsId[i] << ": \n";
+		out << i << ": \n";
 		for (int j = 0; j < EACH_NUM; j++)
 			out << queries[i][j] << '\n';
 		out << "\n";
 	}
+	if (strcmp(fileName, QUERY_FILE_NAME) == 0)
+		out << "\nStarting the process:\n";
 	out.close();
 }
 
@@ -55,7 +125,9 @@ void* batree<keyType>::findLeaf(keyType k) {	//get the NODE pointer
 }
 
 template<typename keyType>
-bool batree<keyType>::search(keyType k) {	//search k in root
+void batree<keyType>::search(int	x, int	y) {	//search k in root
+	//cout << "In search\n";
+	keyType k = queries[x][y].getK();
 	PNODE r = root;
 	while (r) {
 		int i = 0;
@@ -63,16 +135,17 @@ bool batree<keyType>::search(keyType k) {	//search k in root
 			while (i < r->getN() && k >= r->getK(i)) i++;
 		else//for the inner node
 			while (i < r->getN() && k > r->getK(i)) i++;
-		if (i < r->getN() && k == r->getK(i))
-			return true;
-		else if (r->getL()) {
-			cout << "The key does not exist!" << endl;
-			return false;
+		if (i < r->getN() && k == r->getK(i)) {
+			cout << "Yeah! Get " << k << "\t";
+			queries[x][y].setA(true);
+			cout << queries[x][y].ans << '\n';
+			return;
 		}
+		else if (r->getL())
+			return;
 		r = r->getC(i);
 	}
-	cout << "The key does not exist!" << endl;
-	return false;
+	//cout << "Out search!!!\n";
 }
 
 template<typename keyType>
@@ -128,8 +201,19 @@ void batree<keyType>::insertNon(PNODE x, keyType k) {	//insert the k into the su
 }
 
 template<typename keyType>
-void batree<keyType>::insert(keyType k) {	//insert the k into root
+void batree<keyType>::insert(int	x, int	y) {	//insert the k into root
 	//Before inserting, we split the full node
+	//cout << "In insert\n";
+	ofstream out(QUERY_FILE_NAME, ios::app);
+	keyType k = queries[x][y].getK();
+	out << queries[x][y];
+	out << (PNODE)findLeaf(k);
+	search(x, y);
+	if (queries[x][y].ans) {
+		out << '\n';
+		out.close();
+		return;
+	}
 	PNODE r = root;
 	if (MAX_DEGREE == r->getN()) {
 		PNODE s = new node();
@@ -141,6 +225,10 @@ void batree<keyType>::insert(keyType k) {	//insert the k into root
 		insertNon(s, k);
 	}
 	else insertNon(r, k);
+	out << ", " << (PNODE)findLeaf(k) << '\n';
+	out.close();
+	show(x, y);
+	//cout << "Out insert!!!\n";
 }
 
 template<typename keyType>
@@ -170,8 +258,15 @@ void batree<keyType>::merge(PNODE x, int i, PNODE y, PNODE z) {
 }
 
 template<typename keyType>
-void batree<keyType>::del(keyType k) {	//delete the k from root
-	if (search(k)) {
+void batree<keyType>::del(int	x, int	y) {	//delete the k from root
+	//cout << "In del\n";
+	ofstream out(QUERY_FILE_NAME, ios::app);
+	keyType k = queries[x][y].getK();
+	out << queries[x][y];
+	out << (PNODE)findLeaf(k) << '\n';
+	out.close();
+	search(x, y);
+	if (queries[x][y].ans) {
 		PNODE r = root;
 		if (r->getN() == 1 && !r->getL()) {
 			PNODE y = root->getC(0);
@@ -187,6 +282,8 @@ void batree<keyType>::del(keyType k) {	//delete the k from root
 		}
 		else delNon(r, k);
 	}
+	show(x, y);
+	//cout << "Out del!!!\n";
 }
 
 template<typename keyType>
@@ -197,14 +294,13 @@ void batree<keyType>::delNon(PNODE x, keyType k) {
 	else//for the inner node
 		while (i < x->getN() && k > x->getK(i)) i++;
 	if (x->getL()) {//Reach the leaf node
-		cout << "Cur: " << x->getK(i) << endl;
 		if (k == x->getK(i)) {
 			for (int j = i + 1; j < x->getN(); j++)
 				x->setK(j - 1, x->getK(j));
 			x->setN(x->getN() - 1);
 			if (i == 0) delSet(k, x->getK(0));//reset the head - IMPERATIVE
 		}
-		else cout << "The key does not exist!" << endl;
+		//else cout << "The key does not exist!" << endl;
 		return;
 	}
 	// the iner node
@@ -238,6 +334,7 @@ void batree<keyType>::delSet(keyType k, keyType v) {	//reset value accoding to t
 		r = r->getC(i);
 	}
 }
+
 template<typename keyType>
 void batree<keyType>::shiftLTR(PNODE x, int i, PNODE y, PNODE z) {//x's right child y borrows a key and a child from x's left child of z
 	//i: the index of key in x, y: left child of x, z: right child of x
@@ -292,25 +389,36 @@ void batree<keyType>::doShow(ofstream& out, PNODE root, int d) {	//show the node
 	for (int i = 0; i < tmp->getN(); i++)
 		out << tmp->getK(i) << " ";
 	out << ")" << endl;
-	if (!tmp->getL())
+	if (tmp->getC(0))
 		for (int i = 0; i <= tmp->getN(); i++)
 			doShow(out, tmp->getC(i), d + 1);
 }
 
 template<typename keyType>
 void batree<keyType>::show() {//API for showing the btrees
-	ofstream out(TREE_FILE_NAME, ios::app);
-	doShow(out, root, 0);
-	out.close();
+	if (root) {
+		ofstream out(TREE_FILE_NAME, ios::app);
+		doShow(out, root, 0);
+		out.close();
+	}
 }
 
 template<typename keyType>
-void batree<keyType>::doClear(PNODE root) {	//show the nodes in the order of floor
-	if (root->getC(0))
-		for (int i = 0; i <= root->getN(); i++) {
-			doClear(root->getC(i));
-			delete root->getC(i);
-		}
+void batree<keyType>::show(int	x, int	y) {//API for showing the btrees
+	if (root) {
+		ofstream out(TREE_FILE_NAME, ios::app);
+		out << queries[x][y] << '\n';
+		doShow(out, root, 0);
+		out.close();
+	}
+}
+
+template<typename keyType>
+void batree<keyType>::doClear(PNODE t) {	//show the nodes in the order of floor
+	if (t->getC(0))
+		for (int i = 0; i <= t->getN(); i++)
+			doClear(t->getC(i));
+	delete t;
 }
 
 template<typename keyType>

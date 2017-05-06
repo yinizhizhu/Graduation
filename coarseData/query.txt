@@ -1,44 +1,68 @@
-0 - 0: 
-del	5	0x00000000 
-ins	16	0x00000000 
-ins	17	0x00000000 
-fin	12	0x00000000 
-del	16	0x00000000 
-del	17	0x00000000 
-fin	7	0x00000000 
-del	7	0x00000000 
-del	7	0x00000000 
+0: 
+del	5	
+ins	16	
+ins	17	
+fin	12	false
+del	16	
+del	17	
+fin	7	false
+del	7	
+del	7	
 
-1 - 0: 
-fin	3	0x00000000 
-fin	9	0x00000000 
-fin	14	0x00000000 
-ins	4	0x00000000 
-del	15	0x00000000 
-del	8	0x00000000 
-fin	11	0x00000000 
-fin	11	0x00000000 
-ins	15	0x00000000 
+1: 
+fin	3	false
+fin	9	false
+fin	14	false
+ins	4	
+del	15	
+del	8	
+fin	11	false
+fin	11	false
+ins	15	
 
-2 - 0: 
-ins	17	0x00000000 
-fin	7	0x00000000 
-fin	11	0x00000000 
-fin	2	0x00000000 
-del	15	0x00000000 
-ins	3	0x00000000 
-ins	11	0x00000000 
-del	5	0x00000000 
-fin	10	0x00000000 
+2: 
+ins	17	
+fin	7	false
+fin	11	false
+fin	2	false
+del	15	
+ins	3	
+ins	11	
+del	5	
+fin	10	false
 
-3 - 0: 
-ins	3	0x00000000 
-fin	11	0x00000000 
-ins	7	0x00000000 
-del	4	0x00000000 
-fin	14	0x00000000 
-ins	0	0x00000000 
-del	4	0x00000000 
-ins	4	0x00000000 
-fin	14	0x00000000 
+3: 
+ins	3	
+fin	11	false
+ins	7	
+del	4	
+fin	14	false
+ins	0	
+del	4	
+ins	4	
+fin	14	false
 
+
+Starting the process:
+ins	3	0x013D0F68 2 3 
+ins	17	0x013D3048 16 17 
+del	5	0x013D1A58 4 5 
+ins	16	0x013D3048 16 17 
+ins	7	0x013D1B18 6 7 
+ins	17	0x013D3048 16 17 
+del	4	0x013D0F68 2 3 4 
+ins	4	0x013D0F68 2 3 , 013D0F68
+del	15	0x013D2FE8 14 15 
+del	15	0x013D1C98 12 13 14 
+del	16	0x013D3048 16 17 
+ins	0	0x013D0F08 0 1 
+ins	3	0x013D0F68 2 3 4 
+del	8	0x013D1B78 8 9 
+del	17	0x013D3048 14 17 
+del	4	0x013D0F68 2 3 4 
+ins	11	0x013D1B78 9 10 11 
+ins	4	0x013D0F68 2 3 , 013D0F68
+del	5	0x013D0F68 2 3 4 
+del	7	0x013D1B18 6 7 
+ins	15	0x013D1C98 12 13 14 , 013D1C98
+del	7	0x013D1B18 4 6 

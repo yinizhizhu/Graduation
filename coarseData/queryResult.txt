@@ -1,0 +1,44 @@
+0: 
+del	5	
+ins	16	
+ins	17	
+fin	12	true
+del	16	
+del	17	
+fin	7	true
+del	7	
+del	7	
+
+1: 
+fin	3	true
+fin	9	true
+fin	14	true
+ins	4	
+del	15	
+del	8	
+fin	11	true
+fin	11	true
+ins	15	
+
+2: 
+ins	17	
+fin	7	true
+fin	11	true
+fin	2	true
+del	15	
+ins	3	
+ins	11	
+del	5	
+fin	10	true
+
+3: 
+ins	3	
+fin	11	true
+ins	7	
+del	4	
+fin	14	true
+ins	0	
+del	4	
+ins	4	
+fin	14	true
+
