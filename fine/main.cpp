@@ -7,9 +7,9 @@ void show(batree<int>& r) {
 
 void testInsert(batree<int>& r, int n) {
 	for (int i = 0; i < n; i++) {
-		//cout << "Insert " << i << ":" << endl;
+		cout << "Insert " << i << ":" << endl;
 		r.insert(i);
-		//show(r);
+		show(r);
 	}
 	show(r);
 }
@@ -27,24 +27,34 @@ void testSearch(batree<int>& r, int n) {
 
 void testDel(batree<int>& r, int n) {
 	r.del(100);//test the case of not exsiting
-	//char c;
+	char c;
 	for (int i = 0; i < n; i++) {
 		cout << "Delete " << i << ": " << endl;
-		//cout << "Continue?(Y/N): ";
-		//cin >> c;
-		//if (c != 'Y' && c != 'y') break;
+		cout << "Continue?(Y/N): ";
+		cin >> c;
+		if (c != 'Y' && c != 'y') break;
 		r.del(i);
 		show(r);
 	}
 }
 
+void clear(batree<int>& r) {
+	r.clear();
+	r.show();
+}
+
 int main() {
-	cout << "Main thread_id: " << this_thread::get_id() << "\n";
 	batree<int> r;
-	testInsert(r, 9 * DEGREE);
-	//testSearch(r, 10 * DEGREE);
-	r.palm();
-	//r.test(18);
-	//testDel(r, 9 * DEGREE + 1);
+	testInsert(r, 9 * DEGREEA);
+	testSearch(r, 10 * DEGREEA);
+	int n, tmp;
+	cout << "The number of test cases: ";
+	cin >> n;
+	for (; n; n--) {
+		cin >> tmp;
+		r.del(tmp);
+		r.show();
+	}
+	clear(r);
 	return 0;
 }
