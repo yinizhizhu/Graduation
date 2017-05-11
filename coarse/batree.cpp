@@ -47,46 +47,36 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	int i, j;
 	for (i = 0; i < THREAD_NUM; i++)
 		for (j = 0; j < EACH_NUM; j++)
-			queries[i].push_back(QUERY((STEP_TYPE)(rand() % 3), rand() % 18));
+			queries[i].push_back(QUERY((STEP_TYPE)(rand() % 3), rand() % 39));
 	outputQuery(QUERY_FILE_NAME);
-	vector< vector<int> > index(2);
+	vector<int> index;
 	for (j = 0; j < EACH_NUM; j++) {
 		cout << "Mid fastRandom:" << j << "\n";
 		for (i = 0; i < THREAD_NUM; i++) {
 			switch (queries[i][j].type) {
 			case FIN_STEP:
-				index[0].push_back(i);
+				search(i, j);
 				break;
 			case INS_STEP:
 			case DEL_STEP:
-				index[1].push_back(i);
+				index.push_back(i);
 				break;
 			default:
-				cout << "What The Fuck!\n";
+				cout << "What's wrong!\n";
 				break;
 			}
 		}
-		i = index[0].size() - 1;
-		if (i >= 0) {
-			cout << i << ":\n";
-			for (; i >= 0; i--) {
-				threads.push_back(thread(&batree<keyType>::search, this, index[0][i], j));
-				if (queries[index[0][i]][j].ans)
-					cout << "Get " << queries[index[0][i]][j].key << "\n";
-			}
-			for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
-			threads.clear();
-			index[0].clear();
-		}
-		i = index[1].size() - 1;
+		i = index.size() - 1;
 		if (i >= 0) {
 			for (; i >= 0; i--) {
-				if (queries[index[1][i]][j].type == INS_STEP)
-					thread(&batree<keyType>::insert, this, index[1][i], j).join();
+				if (queries[index[i]][j].type == INS_STEP)
+					thread(&batree<keyType>::insert, this, index[i], j).join();
 				else
-					thread(&batree<keyType>::del, this, index[1][i], j).join();
+					thread(&batree<keyType>::del, this, index[i], j).join();
 			}
-			index[1].clear();
+			//mem_fn(&thread::join);
+			threads.clear();
+			index.clear();
 		}
 		cout << "Out Mid " << j << "!!!\n";
 	}
@@ -225,7 +215,8 @@ void batree<keyType>::insert(int	x, int	y) {	//insert the k into root
 		insertNon(s, k);
 	}
 	else insertNon(r, k);
-	out << ", " << (PNODE)findLeaf(k) << '\n';
+	out << "-> ";
+	out << (PNODE)findLeaf(k) << '\n';
 	out.close();
 	show(x, y);
 	//cout << "Out insert!!!\n";

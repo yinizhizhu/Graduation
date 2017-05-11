@@ -19,9 +19,9 @@
 
 using namespace std;
 
-#define DEGREE 3
-#define MIN_DEGREE DEGREE - 1
-#define MAX_DEGREE 2 * DEGREE - 1
+#define DEGREE		3
+#define MIN_DEGREE	DEGREE - 1
+#define MAX_DEGREE	2 * DEGREE - 1
 
 #define	TEST_NUM	99
 #define	EACH_NUM	9
@@ -109,6 +109,7 @@ private:
 	}
 	vector< vector<QUERY> >	queries;	//store the queries
 
+	mutex	proModify;
 	vector<thread>			threads;	//store the threads
 
 public:
