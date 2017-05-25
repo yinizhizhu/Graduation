@@ -19,9 +19,9 @@
 
 using namespace std;
 
-#define DEGREE 3
-#define MIN_DEGREE DEGREE - 1
-#define MAX_DEGREE 2 * DEGREE - 1
+#define DEGREE		3
+#define MIN_DEGREE	DEGREE - 1
+#define MAX_DEGREE	2 * DEGREE - 1
 
 #define	TEST_NUM	99
 #define	EACH_NUM	9
@@ -58,9 +58,12 @@ private:
 	typedef struct node {
 		bool	leaf;					//true while current node is leaf node, false for inner node
 		int		key_n;					//the number of the key
+		mutex	curLock;				//lock the current node
 		keyType	key[MAX_DEGREE];	//store the key
+		node*	parent;
 		node*	child[MAX_DEGREE + 1];		//store the pointer of child
-		node(int k_n = 0, bool l = false) {
+		node(node* p = NULL, int k_n = 0, bool l = false) {
+			parent = p;
 			for (int i = MAX_DEGREE; i >= 0; i--)
 				child[i] = NULL;
 			leaf = l;
@@ -70,10 +73,12 @@ private:
 		bool	getL() { return leaf; }
 		keyType	getK(int i) { return key[i]; }
 		node*	getC(int i) { return child[i]; }
+		node*	getP() { return parent; }
 		void	setN(int n) { key_n = n; }
 		void	setL(bool b) { leaf = b; }
 		void	setK(int i, int n) { key[i] = n; }
 		void	setC(int i, node* t) { child[i] = t; }
+		void	setP(node* t) { parent = t; }
 	} NODE, *PNODE;
 	friend ofstream& operator<<(ofstream& os, const PNODE& a) {
 		os << "0x" << a << " ";
@@ -89,10 +94,10 @@ private:
 	typedef struct query {
 		STEP_TYPE	type;	//find, add, del
 		keyType		key;
-		PNODE		ans;	//store the result of searching
-		query(STEP_TYPE t, keyType k, PNODE a = NULL) : type(t), key(k), ans(a) {}
+		bool		ans;	//store the result of searching
+		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false) {}
 		keyType		getK() { return key; }
-		void		setA(PNODE a) { ans = a; }
+		void		setA(bool a) { ans = a; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
 		//if (a.type == INS_STEP)
@@ -109,8 +114,8 @@ private:
 	}
 	vector< vector<QUERY> >	queries;	//store the queries
 
-	mutex proModify;
 	vector<thread>			threads;	//store the threads
+
 public:
 	batree();
 	~batree();
@@ -118,7 +123,7 @@ public:
 	void	fastRandom();
 	void	outputQuery(char*	fileName);	//output the query into file
 	void*	findLeaf(keyType	k);
-	bool	search(int	x, int	y);								//search k in root
+	void	search(int	x, int	y);								//search k in root
 	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
 	void	insertNon(PNODE	x, keyType	k);					//insert the k into the subtree whose root is node x
 	void	insert(int	x, int	y);								//insert the k into root
@@ -131,6 +136,7 @@ public:
 	void	doShow(ofstream&	out, PNODE	root, int	d);
 	void	show();										//API for showing the btrees
 	void	show(int	x, int	y);										//API for showing the btrees
+	void	testParent(keyType	n);			//test the parent
 	void	doClear(PNODE root);
 	void	clear();										//API for free the sources we apply
 };
