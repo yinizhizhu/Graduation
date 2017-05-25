@@ -70,11 +70,12 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 		if (i >= 0) {
 			for (; i >= 0; i--) {
 				if (queries[index[i]][j].type == INS_STEP)
-					thread(&batree<keyType>::insert, this, index[i], j).join();
+					threads.push_back(thread(&batree<keyType>::insert, this, index[i], j));
 				else
-					thread(&batree<keyType>::del, this, index[i], j).join();
+					threads.push_back(thread(&batree<keyType>::del, this, index[i], j));
 			}
 			//mem_fn(&thread::join);
+			for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 			threads.clear();
 			index.clear();
 		}
@@ -194,6 +195,7 @@ template<typename keyType>
 void batree<keyType>::insert(int	x, int	y) {	//insert the k into root
 	//Before inserting, we split the full node
 	//cout << "In insert\n";
+	lock_guard<mutex> guard(proModify);
 	ofstream out(QUERY_FILE_NAME, ios::app);
 	keyType k = queries[x][y].getK();
 	out << queries[x][y];
@@ -251,6 +253,7 @@ void batree<keyType>::merge(PNODE x, int i, PNODE y, PNODE z) {
 template<typename keyType>
 void batree<keyType>::del(int	x, int	y) {	//delete the k from root
 	//cout << "In del\n";
+	lock_guard<mutex> guard(proModify);
 	ofstream out(QUERY_FILE_NAME, ios::app);
 	keyType k = queries[x][y].getK();
 	out << queries[x][y];
