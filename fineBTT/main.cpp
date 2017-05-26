@@ -2,9 +2,11 @@
 
 int main() {
 	batree<int> r;
-	r.getTree();
+	//r.getTree();
 	r.fastRandom();
-	r.show();
-	r.testParent(36);
+	r.testParent(869);
+	r.testParent(771);
+	r.testParent(716);
+	r.testParent(604);
 	return 0;
 }

@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <stack>
 #include <mutex>
 #include <vector>
 #include <thread>
@@ -72,12 +73,14 @@ private:
 		int		getN() { return key_n; }
 		int		getI() {
 			if (parent) {
-				node* pc = parent->child;
+				node** pc = parent->child;
 				int i = 0;
-				for (; pc[i] != this; i++);
-				return i;
+				for (;; i++) {
+					if (pc[i] == this)
+						return i;
+				}
 			}
-			return -1;
+			return 0;
 		}
 		bool	getL() { return leaf; }
 		keyType	getK(int i) { return key[i]; }
@@ -88,6 +91,10 @@ private:
 		void	setK(int i, int n) { key[i] = n; }
 		void	setC(int i, node* t) { child[i] = t; }
 		void	setP(node* t) { parent = t; }
+		void	show() {
+			for (int i = 0; i < key_n; i++)
+				cout << key[i] << " ";
+		}
 	} NODE, *PNODE;
 	friend ofstream& operator<<(ofstream& os, const PNODE& a) {
 		os << "0x" << a << " ";
@@ -121,10 +128,11 @@ private:
 		}
 		return os;
 	}
-	vector< vector<QUERY> >	queries;	//store the queries
+	vector< vector<QUERY> >		queries;	//store the queries
 
-	vector<thread>			threads;	//store the threads
-
+	vector<thread>				threads;	//store the threads
+	//typedef	pair<PNODE, int>	site;
+	stack<PNODE> path;
 public:
 	batree();
 	~batree();
@@ -134,6 +142,7 @@ public:
 	void*	findLeaf(keyType	k);
 	void	search(int	x, int	y);								//search k in root
 	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
+	void	splitPath(PNODE	r);
 	void	insert(int	x, int	y);								//insert the k into root
 	void	merge(PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
 	void	del(int	x, int	y);								//delete the k from root
