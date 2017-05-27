@@ -1,44 +1,44 @@
 0: 
-del	5	
+del	2	
 ins	16	
-ins	17	
+ins	20	
 fin	12	true
+del	13	
+del	11	
+fin	37	false
 del	16	
-del	17	
-fin	7	true
-del	7	
-del	7	
+del	31	
 
 1: 
-fin	3	true
-fin	9	true
-fin	14	true
-ins	4	
-del	15	
-del	8	
-fin	11	true
-fin	11	true
-ins	15	
+fin	30	false
+fin	21	true
+fin	2	false
+ins	19	
+del	27	
+del	23	
+fin	26	true
+fin	29	false
+ins	36	
 
 2: 
+ins	5	
+fin	31	false
+fin	38	false
+fin	5	true
+del	6	
+ins	9	
 ins	17	
-fin	7	true
-fin	11	true
-fin	2	true
-del	15	
-ins	3	
-ins	11	
-del	5	
-fin	10	true
+del	2	
+fin	19	true
 
 3: 
-ins	3	
-fin	11	true
-ins	7	
-del	4	
-fin	14	true
-ins	0	
-del	4	
-ins	4	
-fin	14	true
+ins	30	
+fin	26	true
+ins	34	
+del	31	
+fin	38	false
+ins	15	
+del	31	
+ins	37	
+fin	29	false
 

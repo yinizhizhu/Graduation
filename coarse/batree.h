@@ -90,9 +90,12 @@ private:
 		STEP_TYPE	type;	//find, add, del
 		keyType		key;
 		bool		ans;	//store the result of searching
-		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false) {}
+		PNODE		cur;
+		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false), cur(NULL) {}
 		keyType		getK() { return key; }
+		PNODE		getC() { return cur; }
 		void		setA(bool a) { ans = a; }
+		void		setC(PNODE c) { cur = c; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
 		//if (a.type == INS_STEP)

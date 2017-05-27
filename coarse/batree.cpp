@@ -53,9 +53,9 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	for (j = 0; j < EACH_NUM; j++) {
 		cout << "Mid fastRandom:" << j << "\n";
 		for (i = 0; i < THREAD_NUM; i++) {
+			threads.push_back(thread(&batree<keyType>::search, this, i, j));
 			switch (queries[i][j].type) {
 			case FIN_STEP:
-				search(i, j);
 				break;
 			case INS_STEP:
 			case DEL_STEP:
@@ -66,6 +66,8 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 				break;
 			}
 		}
+		for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
+		threads.clear();
 		i = index.size() - 1;
 		if (i >= 0) {
 			for (; i >= 0; i--) {
@@ -119,6 +121,7 @@ template<typename keyType>
 void batree<keyType>::search(int	x, int	y) {	//search k in root
 	//cout << "In search\n";
 	keyType k = queries[x][y].getK();
+	queries[x][y].setA(false);
 	PNODE r = root;
 	while (r) {
 		int i = 0;
@@ -127,15 +130,16 @@ void batree<keyType>::search(int	x, int	y) {	//search k in root
 		else//for the inner node
 			while (i < r->getN() && k > r->getK(i)) i++;
 		if (i < r->getN() && k == r->getK(i)) {
-			cout << "Yeah! Get " << k << "\t";
 			queries[x][y].setA(true);
-			cout << queries[x][y].ans << '\n';
-			return;
+			if (queries[x][y].type == FIN_STEP || queries[x][y].type == INS_STEP)
+				return;
 		}
-		else if (r->getL())
-			return;
+		if (r->getL())
+			break;
 		r = r->getC(i);
 	}
+	if (queries[x][y].type != FIN_STEP)
+		queries[x][y].setC(r);
 	//cout << "Out search!!!\n";
 }
 
@@ -199,7 +203,7 @@ void batree<keyType>::insert(int	x, int	y) {	//insert the k into root
 	ofstream out(QUERY_FILE_NAME, ios::app);
 	keyType k = queries[x][y].getK();
 	out << queries[x][y];
-	out << (PNODE)findLeaf(k);
+	out << queries[x][y].getC();
 	search(x, y);
 	if (queries[x][y].ans) {
 		out << '\n';
@@ -257,7 +261,7 @@ void batree<keyType>::del(int	x, int	y) {	//delete the k from root
 	ofstream out(QUERY_FILE_NAME, ios::app);
 	keyType k = queries[x][y].getK();
 	out << queries[x][y];
-	out << (PNODE)findLeaf(k) << '\n';
+	out << queries[x][y].getC() << '\n';
 	out.close();
 	search(x, y);
 	if (queries[x][y].ans) {
