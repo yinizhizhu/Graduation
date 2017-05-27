@@ -20,6 +20,8 @@
 
 using namespace std;
 
+//#define TESTBTT
+
 #define DEGREE		3
 #define MIN_DEGREE	DEGREE - 1
 #define MAX_DEGREE	2 * DEGREE - 1
@@ -111,9 +113,12 @@ private:
 		STEP_TYPE	type;	//find, add, del
 		keyType		key;
 		bool		ans;	//store the result of searching
-		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false) {}
+		PNODE		cur;
+		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false), cur(NULL) {}
 		keyType		getK() { return key; }
+		PNODE		getC() { return cur; }
 		void		setA(bool a) { ans = a; }
+		void		setC(PNODE c) { cur = c; }
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
 		//if (a.type == INS_STEP)
@@ -133,16 +138,17 @@ private:
 	vector<thread>				threads;	//store the threads
 	//typedef	pair<PNODE, int>	site;
 	stack<PNODE> path;
+	mutex		proModify;
 public:
 	batree();
 	~batree();
 	void	getTree();
 	void	fastRandom();
 	void	outputQuery(char*	fileName);	//output the query into file
-	void*	findLeaf(keyType	k);
+	void*	findLeaf(PNODE	r, keyType	k);
 	void	search(int	x, int	y);								//search k in root
 	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
-	void	splitPath(PNODE	r);
+	void*	splitPath(PNODE	r, keyType	k);
 	void	insert(int	x, int	y);								//insert the k into root
 	bool	company(PNODE r);
 	void	merge(PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z

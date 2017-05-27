@@ -2,7 +2,9 @@
 
 int main() {
 	batree<int> r;
-	//r.getTree();
+#ifndef TESTBTT
+	r.getTree();
+#endif
 	r.fastRandom();
 	return 0;
 }
