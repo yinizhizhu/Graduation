@@ -144,9 +144,10 @@ public:
 	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
 	void	splitPath(PNODE	r);
 	void	insert(int	x, int	y);								//insert the k into root
+	bool	company(PNODE r);
 	void	merge(PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
+	void	mergePath(PNODE	r);
 	void	del(int	x, int	y);								//delete the k from root
-	void	delNon(PNODE	x, keyType	k);					//delete the k from the subtree whose root is node x
 	void	delSet(keyType	k, keyType	v);					//revalue the index while the head is changed
 	void	shiftRTL(PNODE	x, int	i, PNODE	y, PNODE	z);	//x's right child y borrows a key and a child from x's left child of z
 	void	shiftLTR(PNODE	x, int	i, PNODE	y, PNODE	z);	//...

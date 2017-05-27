@@ -54,6 +54,17 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	queries[0][0].key = 25;
 	insert(0, 0);
 	testParent(900);
+
+	int n;
+	cout << "Input the number of test cases: ";
+	cin >> n;
+	queries[0][0].type = DEL_STEP;
+	for (; n > 0; n--) {
+		cin >> i;
+		cout << "Delete: " << i << endl;
+		queries[0][0].key = i;
+		del(0, 0);
+	}
 	//for (i = 0; i < THREAD_NUM; i++)
 	//	for (j = 0; j < EACH_NUM; j++)
 	//		queries[i].push_back(QUERY((STEP_TYPE)(rand() % 3), rand() % 39));
@@ -151,8 +162,8 @@ void batree<keyType>::search(int	x, int	y) {	//search k in root
 template<typename keyType>
 void batree<keyType>::split(PNODE x, int i) {	//split the child whose index is i of node x
 	//x - current node, i - the index of node which will be splited
-	x->show();
-	cout << ": " << i << endl;
+	//x->show();
+	//cout << ": " << i << endl;
 	int len = MIN_DEGREE, basis = 0;//for the iner node
 	PNODE z = new NODE(x), y = x->getC(i);
 	z->setL(y->getL());
@@ -198,8 +209,6 @@ void batree<keyType>::splitPath(PNODE r) {
 		root = tmp;
 		split(root, 0);
 	}
-	//PROBLEM is HERE!!!@LEE
-
 	while (!path.empty()) {
 		top = path.top();
 		path.pop();
@@ -230,6 +239,34 @@ void batree<keyType>::insert(int	x, int	y) {	//insert the k into root
 }
 
 template<typename keyType>
+bool batree<keyType>::company(PNODE r) {
+	if (r->parent) {	//Non root
+		if (r->getN() > MIN_DEGREE)
+			return true;
+		PNODE x = r->parent;
+		int i = r->getI();
+		int len = x->getN();
+		if (i > 0 && x->getC(i - 1)->getN() > MIN_DEGREE) {
+			shiftLTR(x, i - 1, x->getC(i - 1), r);
+			return true;
+		}
+		else if (i < len && x->getC(i + 1)->getN() > MIN_DEGREE) {
+			shiftRTL(x, i, r, x->getC(i + 1));
+			return true;
+		}
+		return false;
+	}
+	//for the root
+	if (r->getN() == 1 && !r->getL()) {
+		merge(r, 0, r->getC(0), r->getC(1));
+		root = r->getC(0);
+		root->setP(NULL);
+		delete r;
+	}
+	return true;
+}
+
+template<typename keyType>
 void batree<keyType>::merge(PNODE x, int i, PNODE y, PNODE z) {
 	//i: the index of key in x, y: left child of x, z: right child of x
 	int j = DEGREE, basis = 0, len = MAX_DEGREE;
@@ -243,8 +280,10 @@ void batree<keyType>::merge(PNODE x, int i, PNODE y, PNODE z) {
 		y->setK(j, z->getK(j - DEGREE + basis));
 	if (!y->getL()) {
 		y->setK(MIN_DEGREE, x->getK(i));
-		for (j = DEGREE; j < len + 1; j++)
+		for (j = DEGREE; j < len + 1; j++) {
 			y->setC(j, z->getC(j - DEGREE));
+			y->getC(j)->setP(y);
+		}
 	}
 	for (j = i + 1; j < x->getN(); j++) {
 		x->setK(j - 1, x->getK(j));
@@ -256,73 +295,51 @@ void batree<keyType>::merge(PNODE x, int i, PNODE y, PNODE z) {
 }
 
 template<typename keyType>
-void batree<keyType>::del(int	x, int	y) {	//delete the k from root
-	//cout << "In del\n";
-	//ofstream out(QUERY_FILE_NAME, ios::app);
-	keyType k = queries[x][y].getK();
-	//out << queries[x][y];
-	//out << (PNODE)findLeaf(k) << '\n';
-	//out.close();
-	search(x, y);
-	if (queries[x][y].ans) {
-		PNODE r = root;
-		lock_guard<mutex> guard(r->curLock);
-		if (r->getN() == 1 && !r->getL()) {
-			PNODE y = root->getC(0);
-			PNODE z = root->getC(1);
-			int n = y->getN() + z->getN();
-			if ((!y->getL() && n <= MAX_DEGREE - 1) || (y->getL() && n <= MAX_DEGREE)) {
-				merge(r, 0, y, z);
-				root = y;
-				root->setP(NULL);
-				delete r;
-				lock_guard<mutex> guard(y->curLock);
-				delNon(y, k);
-			}
-			else
-				delNon(r, k);
-		}
-		else
-			delNon(r, k);
+void batree<keyType>::mergePath(PNODE r) {
+	while (r && !company(r)) {
+		path.push(r);
+		r = r->parent;
 	}
-	show(x, y);
-	//cout << "Out del!!!\n";
+	if (path.empty())
+		return;
+	PNODE top = NULL;
+	while (!path.empty()) {
+		top = path.top();
+		path.pop();
+		if (top->getN() == MIN_DEGREE) {
+			PNODE x = top->parent;
+			int i = top->getI();
+			if (i > 0)
+				merge(x, i - 1, x->getC(i - 1), top);
+			else
+				merge(x, i, top, x->getC(i + 1));
+		}
+	}
 }
 
 template<typename keyType>
-void batree<keyType>::delNon(PNODE x, keyType k) {
-	int i = 0;
-	if (x->getC(0))//for the leaf node
-		while (i < x->getN() && k >= x->getK(i)) i++;
-	else//for the inner node
-		while (i < x->getN() && k > x->getK(i)) i++;
-	if (x->getL()) {//Reach the leaf node
-		if (k == x->getK(i)) {
-			for (int j = i + 1; j < x->getN(); j++)
-				x->setK(j - 1, x->getK(j));
-			x->setN(x->getN() - 1);
-			if (i == 0) delSet(k, x->getK(0));//reset the head - IMPERATIVE
-		}
-		//else cout << "The key does not exist!" << endl;
-		return;
+void batree<keyType>::del(int	x, int	y) {	//delete the k from root
+	//cout << "In del\n";
+	keyType k = queries[x][y].getK();
+	search(x, y);
+	if (queries[x][y].ans) {
+		PNODE r = (PNODE)findLeaf(k);
+		r->show();
+		cout << endl;
+		mergePath(r);
+		r = (PNODE)findLeaf(k);
+		int i = 0;
+		if (r->getC(0))//for the leaf node
+			while (i < r->getN() && k >= r->getK(i)) i++;
+		else//for the inner node
+			while (i < r->getN() && k > r->getK(i)) i++;
+		for (int j = i + 1; j < r->getN(); j++)
+			r->setK(j - 1, r->getK(j));
+		r->setN(r->getN() - 1);
+		if (i == 0) delSet(k, r->getK(0));//reset the head - IMPERATIVE
 	}
-	// the iner node
-	PNODE z = NULL, p = NULL, y = x->getC(i);
-	if (i < x->getN()) z = x->getC(i + 1);
-	if (i > 0) p = x->getC(i - 1);
-	if (y->getN() == MIN_DEGREE) {
-		if (i > 0 && p->getN() >= DEGREE)//Get: try the left side
-			shiftLTR(x, i - 1, p, y);
-		else if (i < x->getN() && z->getN() >= DEGREE)//Get: try the right side
-			shiftRTL(x, i, y, z);
-		else if (i > 0) {//Merge: try the left side
-			merge(x, i - 1, p, y);
-			y = p;
-		}
-		else merge(x, i, y, z);//Merge: try the right side
-	}
-	lock_guard<mutex> guard(y->curLock);
-	delNon(y, k);
+	show(x, y);
+	//cout << "Out del!!!\n";
 }
 
 template<typename keyType>
@@ -392,7 +409,7 @@ void batree<keyType>::doShow(ofstream& out, PNODE tmp, int d) {	//show the nodes
 	for (int i = 0; i < tmp->getN(); i++)
 		out << tmp->getK(i) << " ";
 	if (tmp->leaf)
-		out << "LEAF";
+		out << "~";
 	out << ")" << endl;
 	if (tmp->getC(0))
 		for (int i = 0; i <= tmp->getN(); i++)
@@ -435,16 +452,14 @@ void batree<keyType>::testParent(keyType n) {//API for showing the btrees
 
 template<typename keyType>
 void batree<keyType>::doClear(PNODE t) {	//show the nodes in the order of floor
-	if (!t)
-		return;
-	for (int i = 0; i <= t->getN(); i++)
-		doClear(t->getC(i));
-	delete t;
+	if (t) {
+		for (int i = 0; i <= t->getN(); i++)
+			doClear(t->getC(i));
+		delete t;
+	}
 }
 
 template<typename keyType>
 void batree<keyType>::clear() {//API for free the sources we apply
-	cout << "0.0" << endl;
 	doClear(root);
-	cout << "-.-" << endl;
 }
