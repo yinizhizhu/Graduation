@@ -358,6 +358,7 @@ void batree<keyType>::shiftLTR(PNODE x, int i, PNODE y, PNODE z) {//x's right ch
 		for (j = z->getN(); j >= 0; j--)
 			z->setC(j + 1, z->getC(j));
 		z->setC(0, y->getC(y->getN()));
+		z->getC(0)->setP(z);
 	}
 	z->setN(z->getN() + 1);
 	y->setN(y->getN() - 1);
@@ -377,10 +378,12 @@ void batree<keyType>::shiftRTL(PNODE x, int i, PNODE y, PNODE z) {//...
 	}
 	for (int k = 1; k < z->getN(); k++)
 		z->setK(k - 1, z->getK(k));
-	y->setC(n + 1, z->getC(0));
-	if (!z->getL())
+	if (!z->getL()) {
+		y->setC(n + 1, z->getC(0));
+		y->getC(n + 1)->setP(y);
 		for (int k = 1; k <= z->getN(); k++)
 			z->setC(k - 1, z->getC(k));
+	}
 	y->setN(n + 1);
 	z->setN(z->getN() - 1);
 }
