@@ -21,6 +21,7 @@
 using namespace std;
 
 //#define TESTBTT
+//#define DEBUG_
 
 #define DEGREE		3
 #define MIN_DEGREE	DEGREE - 1
@@ -119,6 +120,14 @@ private:
 		PNODE		getC() { return cur; }
 		void		setA(bool a) { ans = a; }
 		void		setC(PNODE c) { cur = c; }
+		void		show() {
+			if (type == INS_STEP)
+				cout << "ins\t";
+			else if (type == DEL_STEP)
+				cout << "del\t";
+			else cout << "fin\t";
+			cout << key << ":";
+		}
 	} QUERY, *PQUERY;
 	friend ofstream& operator<<(ofstream& os, const QUERY& a) {
 		//if (a.type == INS_STEP)
@@ -137,8 +146,7 @@ private:
 
 	vector<thread>				threads;	//store the threads
 	//typedef	pair<PNODE, int>	site;
-	stack<PNODE> path;
-	mutex		proModify;
+	mutex	proModify;
 public:
 	batree();
 	~batree();
@@ -150,11 +158,14 @@ public:
 	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
 	void*	splitPath(PNODE	r, keyType	k);
 	void	insert(int	x, int	y);								//insert the k into root
-	bool	company(PNODE r);
+	bool	company(stack<PNODE>&	path, PNODE r);
+	void	getNode(PNODE	r, PNODE&	ans, bool&	tag, keyType	k);
+	void	getPath(stack<PNODE>&	path, PNODE	r, PNODE&	ans, bool&	tag, keyType	k);
+	void	doIt(stack<PNODE>&	path, PNODE&	r, PNODE&	tmp);
 	void	merge(PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
-	void	mergePath(PNODE	r);
+	void*	mergePath(PNODE	r, keyType	k, int	x, int	y);
 	void	del(int	x, int	y);								//delete the k from root
-	void	delSet(keyType	k, keyType	v);					//revalue the index while the head is changed
+	void	delSet(keyType	k, keyType	v, int	x, int	y);					//revalue the index while the head is changed
 	void	shiftRTL(PNODE	x, int	i, PNODE	y, PNODE	z);	//x's right child y borrows a key and a child from x's left child of z
 	void	shiftLTR(PNODE	x, int	i, PNODE	y, PNODE	z);	//...
 	void	doShow(ofstream&	out, PNODE	root, int	d);
