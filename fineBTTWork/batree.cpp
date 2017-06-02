@@ -70,6 +70,7 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 		queries[0][0].key = i;
 		search(0, 0);
 		del(0, 0);
+		testParent(999);
 	}
 #else
 	for (i = 0; i < THREAD_NUM; i++)
@@ -110,7 +111,7 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 			index.clear();
 		}
 		cout << "Out Mid " << j << "!!!\n";
-		show();
+		show(j);
 	}
 	outputQuery(QRESULT_FILE_NAME);
 #endif
@@ -378,12 +379,10 @@ void batree<keyType>::getPath(stack<PNODE>& path, PNODE r, PNODE& ans, bool& tag
 	while (r && !company(path, r, ans)) {
 		path.push(r);
 		r = r->parent;
-		if (r) {
-			r->curLock.lock();	//lock
-			if (!tag)
-				getNode(r, ans, tag, k);
-		}
+		if (r && !tag)
+			getNode(r, ans, tag, k);
 	}
+	cout << "Mid getPath\n";
 	if (!path.empty()) {
 		if (!tag && r) {
 			r = r->parent;
@@ -661,9 +660,15 @@ void batree<keyType>::doShow(ofstream& out, PNODE tmp, int d) {	//show the nodes
 }
 
 template<typename keyType>
-void batree<keyType>::show() {//API for showing the btrees
+void batree<keyType>::show(int y) {//API for showing the btrees
 	if (root) {
 		ofstream out(TREE_FILE_NAME, ios::app);
+		if (y >= 0) {
+			for (int i = 0; i < THREAD_NUM; i++) {
+				out << queries[i][y];
+				out << "\n";
+			}
+		}
 		doShow(out, root, 0);
 		out.close();
 	}

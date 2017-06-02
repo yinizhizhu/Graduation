@@ -20,7 +20,7 @@
 
 using namespace std;
 
-#define TESTBTT
+//#define TESTBTT
 //#define DEBUG_
 
 #define DEGREE		3
@@ -181,7 +181,7 @@ public:
 	void	shiftRTL(PNODE	x, int	i, PNODE	y, PNODE	z);	//x's right child y borrows a key and a child from x's left child of z
 	void	shiftLTR(PNODE	x, int	i, PNODE	y, PNODE	z);	//...
 	void	doShow(ofstream&	out, PNODE	root, int	d);
-	void	show();										//API for showing the btrees
+	void	show(int	y=-1);										//API for showing the btrees
 	void	show(int	x, int	y);										//API for showing the btrees
 	void	testParent(keyType	n);			//test the parent
 	void	doClear(PNODE root);
