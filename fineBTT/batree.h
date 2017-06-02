@@ -120,6 +120,19 @@ private:
 		PNODE		getC() { return cur; }
 		void		setA(bool a) { ans = a; }
 		void		setC(PNODE c) { cur = c; }
+		PNODE		lock() {
+			//cout << "In lock\n";
+			if (cur) {
+				//cout << "\ts: ";
+				//cur->show();
+				//cout << endl;
+				cur->curLock.lock();
+			}
+			else
+				cout << "Something is worng!!!\n";
+			//cout << "Out lock!!!\n";
+			return cur;
+		}
 		void		show() {
 			if (type == INS_STEP)
 				cout << "ins\t";
@@ -136,17 +149,16 @@ private:
 		//	os << "del\t";
 		//else os << "fin\t";
 		os << a.type << "\t" << a.key << "\t";
-		if (a.type == FIN_STEP) {
-			if (a.ans) os << "true";
-			else os << "false";
-		}
+		if (a.type == FIN_STEP || a.type == DEL_STEP)
+			if (a.ans) os << "Y";
+		else
+			if (!a.ans) os << "Y";
 		return os;
 	}
 	vector< vector<QUERY> >		queries;	//store the queries
 
 	vector<thread>				threads;	//store the threads
 	//typedef	pair<PNODE, int>	site;
-	mutex	proModify;
 public:
 	batree();
 	~batree();
@@ -155,21 +167,21 @@ public:
 	void	outputQuery(char*	fileName);	//output the query into file
 	void*	findLeaf(PNODE	r, keyType	k);
 	void	search(int	x, int	y);								//search k in root
-	void	split(PNODE	x, int	i);							//split the child whose index is i of node x
+	void	split(stack<PNODE>&	path, PNODE	x, int	i);							//split the child whose index is i of node x
 	void*	splitPath(PNODE	r, keyType	k);
 	void	insert(int	x, int	y);								//insert the k into root
-	bool	company(stack<PNODE>&	path, PNODE r);
+	bool	company(stack<PNODE>&	path, PNODE& r, PNODE&	ans);
 	void	getNode(PNODE	r, PNODE&	ans, bool&	tag, keyType	k);
 	void	getPath(stack<PNODE>&	path, PNODE	r, PNODE&	ans, bool&	tag, keyType	k);
-	void	doIt(stack<PNODE>&	path, PNODE&	r, PNODE&	tmp);
-	void	merge(PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
+	void	doIt(stack<PNODE>&	path, PNODE&	r, PNODE&	tmp, PNODE	ans);
+	void	merge(stack<PNODE>&	path, PNODE	x, int	i, PNODE	y, PNODE	z);		//merge node y, key i and node z, x is the parent of y and z
 	void*	mergePath(PNODE	r, keyType	k, int	x, int	y);
 	void	del(int	x, int	y);								//delete the k from root
 	void	delSet(keyType	k, keyType	v, int	x, int	y);					//revalue the index while the head is changed
 	void	shiftRTL(PNODE	x, int	i, PNODE	y, PNODE	z);	//x's right child y borrows a key and a child from x's left child of z
 	void	shiftLTR(PNODE	x, int	i, PNODE	y, PNODE	z);	//...
 	void	doShow(ofstream&	out, PNODE	root, int	d);
-	void	show();										//API for showing the btrees
+	void	show(int	y=-1);										//API for showing the btrees
 	void	show(int	x, int	y);										//API for showing the btrees
 	void	testParent(keyType	n);			//test the parent
 	void	doClear(PNODE root);
