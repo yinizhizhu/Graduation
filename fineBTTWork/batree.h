@@ -17,6 +17,9 @@
 
 using namespace std;
 
+//#define SINGLE
+//#define SHOW
+
 #define	DEGREE	3
 #define MIN_DEGREE DEGREE-1
 #define MAX_DEGREE 2*DEGREE-1
@@ -58,6 +61,7 @@ private:
 		else if (a == INS_STEP) os << "ins";
 		else if (a == DEL_STEP) os << "del";
 		else if (a == UPD_STEP) os << "upd";
+		else if (a == HED_STEP) os << "hed";
 		else os << "mer";
 		return os;
 	}
@@ -105,9 +109,9 @@ private:
 	typedef struct query {
 		STEP_TYPE	type;	//find, add, del
 		keyType		key;
-		PNODE		ans;	//store the result of searching
-		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(NULL) {}
-		void		setA(PNODE a) { ans = a; }
+		bool		ans;	//store the result of searching
+		query(STEP_TYPE t, keyType k) : type(t), key(k), ans(false) {}
+		void		setA(bool a) { ans = a; }
 		keyType		getK() { return key; }
 		void		show() {
 			if (type == INS_STEP)
@@ -125,10 +129,10 @@ private:
 		//	os << "del\t";
 		//else os << "fin\t";
 		os << a.type << "\t" << a.key << "\t";
-		if (a.type == FIN_STEP || a.type == DEL_STEP)
-			if (a.ans) os << "Y";
-			else
-				if (!a.ans) os << "Y";
+		if (a.ans)
+			os << "Y";
+		else
+			os << "-";
 		return os;
 	}
 	vector< vector<QUERY> > queries;	//store the queries
@@ -199,6 +203,12 @@ private:
 				cout << '\t';
 				if (move->type == INS_STEP)
 					cout << "INS ";
+				else if (move->type == DEL_STEP)
+					cout << "DEL ";
+				else if (move->type == UPD_STEP)
+					cout << "UPD ";
+				else if (move->type == HED_STEP)
+					cout << "HED ";
 				cout << move->key << '\n';
 				move = move->next;
 			}
@@ -259,11 +269,12 @@ public:
 	void	swap(keyType&	a, keyType&	b);					//support the modifynode
 	void	showChildB(vector<PNODE>&	childBuf);									//test the childBuf in modifynode
 	void	showBuffer(vector<keyType>&	buffer, vector<PNODE>& child);			//test the buffer in modifynode
+	void	showModifyList(char*	fileName);
 	void	find(INDEX	p);				//testing for finding
 	void*	findLeaf(keyType	k);							//get the leaf node pointer
 	bool	search(keyType	k);								//search k in root
 	void	doShow(ofstream&	out, PNODE	root, int	d);
-	void	show(int	tag, keyType	key);										//API for showing the btrees
+	void	show(int	tag = -1, keyType	key = 0);										//API for showing the btrees
 	void	testParent(keyType	n);			//test the parent
 	void	doClear(PNODE	root);
 	void	clear();										//API for free the sources we apply
