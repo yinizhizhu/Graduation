@@ -1,0 +1,6 @@
+Your program executed time is 168.077ms.
+Your program executed time is 162.393ms.
+Your program executed time is 181.259ms.
+Your program executed time is 173.481ms.
+Your program executed time is 171.926ms.
+Your program executed time is 166.533ms.
