@@ -22,8 +22,14 @@ struct info {	//for the leaf node
 			cout << '\t';
 			if (move->type == INS_STEP)
 				cout << "INS ";
-			else
+			else if (move->type == DEL_STEP)
 				cout << "DEL ";
+			else if (move->type == UPD_STEP)
+				cout << "UPD ";
+			else if (move->tyep == HED_STEP)
+				cout << "HED ";
+			else
+				cout << "MER ";
 			cout << move->key << '\n';
 			move = move->next;
 		}
@@ -31,4 +37,27 @@ struct info {	//for the leaf node
 	}
 };
 
+template<typename keyType>
+ofstream& operator<<(ofstream& os, info<keyType>* a) {
+	cout << "In output info...\n";
+	info<keyType>* move = a;
+	while (move) {
+		os << '\t';
+		if (move->type == INS_STEP)
+			os << "ins ";
+		else if (move->type == DEL_STEP)
+			os << "del ";
+		else if (move->type == UPD_STEP)
+			os << "upd ";
+		else if (move->type == HED_STEP)
+			os << "hed ";
+		else
+			os << "mer ";
+		os << move->key << '\n';
+		move = move->next;
+	}
+	os << '\n';
+	cout << "Out output info!!!\n";
+	return os;
+}
 #endif

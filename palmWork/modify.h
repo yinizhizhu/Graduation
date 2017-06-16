@@ -1,6 +1,7 @@
 #ifndef MODIFY_H
 #define MODIFY_H
 #pragma once
+#include "node.h"
 #include "stepType.h"
 
 #include <iostream>
@@ -43,4 +44,31 @@ struct modify {
 	}
 };
 
+template<typename keyType>
+ofstream& operator<<(ofstream& os, modify<keyType>* a) {
+	//cout << "In output modify...\n";
+	modify<keyType>* move = a;
+	os << "0x" << a << ":\n";
+	while (move) {
+		os << "\t";
+		if (move->type == INS_STEP)
+			os << "ins ";
+		else if (move->type == DEL_STEP)
+			os << "del ";
+		else if (move->type == UPD_STEP)
+			os << "upd ";
+		else if (move->type == HED_STEP)
+			os << "hed ";
+		else
+			os << "mer ";
+		if (move->type == UPD_STEP)
+			os << move->old << "->";
+		os << move->key << ": ";
+		os << (node<keyType>*)move->leaf << '\n';
+		move = move->next;
+	}
+	os << '\n';
+	//cout << "Out output modify!!!\n";
+	return os;
+}
 #endif

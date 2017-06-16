@@ -1,7 +1,7 @@
 #include "batree.h"
 
 template<typename keyType>
-batree<keyType>::batree() {	//initial
+batree<keyType>::batree(int v) {	//initial
 	root = new NODE();
 	deep = 1;
 	if (!root)
@@ -10,7 +10,10 @@ batree<keyType>::batree() {	//initial
 	queries.resize(THREAD_NUM);
 	threadsId.resize(THREAD_NUM);
 
-	ofstream out(TREE_FILE_NAME);
+	testV = v;
+	variable = 20 * v*THREAD_NUM;
+	sprintf(treeFileName, "data\\data%d\\bPlus%d.txt", v, variable);
+	ofstream out(treeFileName);
 	out.close();
 
 	costT = 0;
@@ -21,13 +24,13 @@ batree<keyType>::~batree() {	//free the sources
 	cout << "In clean\n";
 	clear();
 
-	cout << "Mid clean after root\n";
+	//cout << "Mid clean after root\n";
 
 	for (int i = 0; i < THREAD_NUM; i++)//clean queries
 		queries[i].clear();
 	queries.clear();
 
-	cout << "Mid clean after queries\n";
+	//cout << "Mid clean after queries\n";
 
 	infoIter move = list.begin();	//clean list
 	while (move != list.end()) {
@@ -41,7 +44,7 @@ batree<keyType>::~batree() {	//free the sources
 	}
 	list.clear();
 
-	cout << "Mid clean after list\n";
+	//cout << "Mid clean after list\n";
 
 	move = modifyList.begin();	//clean list
 	while (move != modifyList.end()) {
@@ -55,7 +58,7 @@ batree<keyType>::~batree() {	//free the sources
 	}
 	modifyList.clear();
 
-	cout << "Mid clean after modifyList\n";
+	//cout << "Mid clean after modifyList\n";
 
 	threads.clear();
 	threadsId.clear();
@@ -91,9 +94,7 @@ void batree<keyType>::getTree() {
 
 template<typename keyType>
 void batree<keyType>::fastRandom() {	//get the query randomly
-	//srand((int)time(0));
-	//while (queries.size() < EACH_NUM)
-	//	queries.push_back(QUERY(rand() % 3, rand() % 9999));
+	cout << "In fastRandom\n";
 #ifndef SINGLE
 	getTree();
 	//get the search query randomly, stored in 'queries'
@@ -110,13 +111,14 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	threads.clear();
 	costT += clk.stop();
 
-	cout << "finish the search!\n";
+	//cout << "finish the search!\n";
 	outputQuery(QRESULT_FILE_NAME);
 	//get the Delete&Insert query randomly, store in 'list'
+	current = 0;
 	PNODE p;
 	keyType k;
 	infoIter item;
-	for (int i = 0; i < EACH_NUM*EACH_NUM; i++) {
+	for (int i = 0; i < variable; i++) {
 		k = rand() % 99;	//while keytype is INT
 		p = (PNODE)findLeaf(k);
 		item = list.find(p);
@@ -126,14 +128,25 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 			tmp->setN(head);
 			item->second = tmp;
 		}
-		else
+		else {
+			if (list.size() == 4) {
+				char infoFileName[30];
+				sprintf(infoFileName, "data\\data%d\\info%d.txt", testV, current++);
+				palm(infoFileName);
+				show();
+			}
 			list[p] = new INFO((STEP_TYPE)(rand() % 2 + 1), k);
+		}
 	}
-	palm();
+	if (list.size()) {
+		char infoFileName[30];
+		sprintf(infoFileName, "data\\data%d\\info%d.txt", testV, current);
+		palm(infoFileName);
+		show();
+	}
 	ofstream out("data.txt", ios::app);
-	out << "Your program executed time is " << costT << "ms.\n";
+	out << variable << "\tYour program executed time is " << costT << "ms.\n";
 	out.close();
-	show();
 	outputQuery(QRESULT_FILE_NAME);
 #else
 	int i, j;
@@ -234,12 +247,6 @@ void batree<keyType>::outputQuery(char* fileName) {	//output the query
 
 template<typename keyType>
 void batree<keyType>::outputInfo(char* fileName) {	//output the info
-	//ofstream out(QUERY_FILE_NAME);
-	//unsigned int i, n = queries.size();
-	//for (i = 0; i < n; i++)
-	//	out << queries[i];
-	//out.close();
-
 	ofstream out(fileName);
 	infoIter tmp = list.begin();
 	for (; tmp != list.end(); tmp++) {
@@ -260,90 +267,92 @@ void batree<keyType>::outputInfo(char* fileName) {	//output the info
 }
 
 template<typename keyType>
-void batree<keyType>::palm() {	//palm operation for this BPlus tree
+void batree<keyType>::palm(char* infoFileName) {	//palm operation for this BPlus tree
 	//stage 1: search
-	cout << "In palm\n";
+	//cout << "In palm\n";
 
-	outputInfo(INFO_FILE_NAME);
+	outputInfo(infoFileName);
 	
-	cout << "\nStarting modify-leaf-node...\n";
+	//cout << "\nStarting modify-leaf-node...\n";
 
 	//stage 2: modify-leaf-NODE	
 	int i = 0, counter;
 	infoIter move= list.begin();
 	counter = list.size();
 
-	cout << "Start timing...\n";
+	//cout << "Start timing...\n";
 	clk.start();
-	for (i = 0; i < THREAD_NUM && counter; i++, move++, counter--)
+	for (i = 0; i < counter; i++, move++)
 		threads.push_back(thread(&batree<keyType>::modifyNode, this, move, 0));
 		//sync
 	for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 	threads.clear();
 	costT += clk.stop();
-	cout << "End timing!!!\n";
+	//cout << "End timing!!!\n";
 
-	for (; i > 0; i--)	//remove the info which is handled
+	for (i = 0; i < counter; i++)	//remove the info which is handled
 		list.erase(list.begin());
-#ifndef SINGLE
+#ifdef SINGLE
 	showModifyList("inner.txt");
 #endif
-	cout << "finish the modify-leaf-node!\n\nStarting modify-inner-node...\n";
+	//cout << "finish the modify-leaf-node!\n\nStarting modify-inner-node...\n";
 	//outputInfo(IRESULT_FILE_NAME);
 
 	//stage 3: modify-inner-NODE
-	cout << "Deep: " << deep << '\n';
-	cout << "Start timing...\n";
+	//cout << "Deep: " << deep << '\n';
+	//cout << "Start timing...\n";
 	clk.start();
 	for (int j = 2; j < deep; j++) {
+		//cout << "\tModifying inner node...\n";
 		counter = modifyList.size();
-		for (i = 0, move = modifyList.begin(); i < THREAD_NUM && counter; i++, move++, counter--)
+		for (i = 0, move = modifyList.begin(); i < counter; i++, move++) {
+			//cout << "\tPush " << ((PMODIFY)move->second)->getT() << "\n";
+			//if (((PMODIFY)move->second)->getT() < 0) {
+			//	int b;
+			//	cout << "\tInput the b: ";
+			//	cin >> b;
+			//}
 			threads.push_back(thread(&batree<keyType>::modifyNode, this, move, 1));
+		}
 		//sync
 		for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 		threads.clear();
 
-		for (; i > 0; i--)	//remove the info which is handled
+		for (i = 0; i < counter; i++)	//remove the info which is handled
 			modifyList.erase(modifyList.begin());
-		cout << "-.-\n";
 	}
 	costT += clk.stop();
-	cout << "End timing!!!\n";
+	//cout << "End timing!!!\n";
 
-#ifndef SINGLE
+#ifdef SINGLE
 	showModifyList("root.txt");
 #endif
-	cout << "finish the modify-inner-node!\n\nStarting modify-root-node...\n";
+	//cout << "finish the modify-inner-node!\n\nStarting modify-root-node...\n";
 
 	//stage 4: handle the root
-	cout << "Start timing...\n";
+	//cout << "Start timing...\n";
 	clk.start();
 	move = modifyList.begin();
-	cout << modifyList.size() << endl;
+	//cout << modifyList.size() << endl;
 	while (move != modifyList.end()) {
-		cout << "Push " << ((PMODIFY)move->second)->getT() << "\n";
-		if (((PMODIFY)move->second)->getT() < 0) {
-			int a;
-			cin >> a;
-		}
+		//cout << "\tModifying root...\n";
+		//cout << "\tPush " << ((PMODIFY)move->second)->getT() << "\n";
+		//if (((PMODIFY)move->second)->getT() < 0) {
+		//	int a;
+		//	cout << "\tInput the a: ";
+		//	cin >> a;
+		//}
 		thread(&batree<keyType>::handleRoot, this, move).join();
 		modifyList.erase(move);
 		move = modifyList.begin();
 	}
 	costT += clk.stop();
-	cout << "End timing!!!\n";
+	//cout << "End timing!!!\n";
 
-	cout << "finish modify-root-node...\n";
+	//cout << "finish modify-root-node...\n";
 	showOrp();
-	cout << "Out palm!!!\n";
+	//cout << "Out palm!!!\n";
 }
-
-//template<typename keyType>
-//int batree<keyType>::getDeep() {
-//	int deep = 0;
-//	for (PNODE tmp = root; tmp; deep++, tmp = tmp->getC(0));
-//	return deep;
-//}
 
 template<typename keyType>
 void batree<keyType>::handleRoot(infoIter inf) {	//the supporting funciton
@@ -498,11 +507,12 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 		//cout << "MAX_D1\n";
 		//big - split();
 		cur->setN(MIN_DEGREE);//set the number of key
-		if (cur->getL())
+		if (cur->getL() && buffer[j] != cur->getK(0)) {
 			child = new MODIFY(UPD_STEP, buffer[j], cur, NULL);
+			child->setO(cur->getK(0));
+		}
 		else
 			child = new MODIFY(HED_STEP, buffer[j], cur, NULL);
-		child->setO(cur->getK(0));
 		PMODIFY moveChild = child;
 		while (n > MAX_DEGREE) {
 			buf = (PNODE)moveChild->getL();
@@ -560,12 +570,11 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 				child = new MODIFY(DEL_STEP, cur->getK(0), cur, NULL);
 		}
 		else {
-			if (cur->getL())
+			if (cur->getL() && buffer[j] != cur->getK(0))
 				child = new MODIFY(UPD_STEP, buffer[j], cur, NULL);
-			else
-				child = new MODIFY(HED_STEP, buffer[j], cur, NULL);
 		}
-		child->setO(cur->getK(0));
+		if (child)
+			child->setO(cur->getK(0));
 		cur->setN(n);//set the number of key
 		for (i = 0; n > 0; i++, j++, n--) {
 			cur->setK(i, buffer[j]);
@@ -578,7 +587,7 @@ void batree<keyType>::modifyNode(infoIter inf, INDEX p) {	//the supporting funci
 			childBuf[k]->setP(cur);
 			cur->setC(i, childBuf[k]);
 		}
-		if (parent) {
+		if (parent && child) {
 #ifdef SHOW
 			if (parent == root) {
 				cout << "Operation: \n";
@@ -618,7 +627,7 @@ void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, vector<keyTy
 	//cout << "In getBuffer\n";
 	//cout << "p = " << p << endl;
 	if (p == 0) {
-		//cout << "Leaf!\n";
+		//cout << "\tLeaf!\n";
 		void* ope = inf->second, *move;
 		int i, len;
 		keyType		key;
@@ -658,7 +667,7 @@ void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, vector<keyTy
 		}
 	}
 	else {
-		//cout << "Inner!\n";
+		//cout << "\tInner!\n";
 		PNODE cur = (PNODE)inf->first, tmp;
 		PMODIFY ope = (PMODIFY)inf->second, move, head = NULL;
 		int i, j = 0;
@@ -760,7 +769,7 @@ void batree<keyType>::getBuffer(vector<PNODE>& child, infoIter inf, vector<keyTy
 				pushModify(cur->getP(), head, head);
 			}
 		}
-		//cout << "*****"<< child.size() - buffer.size() << "*****\n";
+		//cout << "\t*****"<< child.size() - buffer.size() << "*****\n";
 	}
 	//cout << "Out getBuffer!!!\n";
 }
@@ -822,6 +831,7 @@ void batree<keyType>::collect(PNODE root) {
 				collect(root->getC(i));
 		delete root;
 	}
+	//cout << "Finish collection!!!\n";
 }
 
 template<typename keyType>
@@ -983,12 +993,12 @@ void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild)
 	//outputModify(parent, child);//test;
 #ifdef SHOW
 	char name[66];
-	sprintf(name, "data\\%d.txt", parent);
+	sprintf(name, "data\\%d_%d.txt", current, parent);
 	ofstream out(name, ios::app);
 	out << "Parent: ";
 	out << parent;
 	out << "\n";
-	out << "In Child: ";
+	out << "In Child:\n";
 	out << child;
 	out << "\n";
 #endif
@@ -1028,16 +1038,16 @@ void batree<keyType>::pushModify(PNODE parent, PMODIFY child, PMODIFY moveChild)
 
 template<typename keyType>
 void batree<keyType>::outputModify(PNODE parent, PMODIFY child) {
-	cout << "In outputModify\n";
+	//cout << "In outputModify\n";
 	char name[66];
-	sprintf(name, "data\\modify-%x.txt", parent);
+	sprintf(name, "data\\%d_modify_%x.txt", current, parent);
 	ofstream out(name, ios::app);
 	out << "Parent: ";
 	out << parent;
 	out << "\n";
 	out << child;
 	out.close();
-	cout << "Out outputModify!!!\n";
+	//cout << "Out outputModify!!!\n";
 }
 
 template<typename keyType>
@@ -1061,9 +1071,9 @@ template<typename keyType>
 void batree<keyType>::showBuffer(vector<keyType>& buffer, vector<PNODE>& child) {
 	char name[66];
 	if (child.size())
-		sprintf(name, "data\\showBuffer_%d_%d.txt", child[0], child[0]->getL());
+		sprintf(name, "data\\%d_showBuffer_%d_%d.txt", current, child[0], child[0]->getL());
 	else
-		sprintf(name, "data\\showBuffer_%d_.txt", this_thread::get_id());
+		sprintf(name, "data\\%d_showBuffer_%d_.txt", current, this_thread::get_id());
 	ofstream out(name);
 	int i = 0, n = buffer.size();
 	out <<"buffer "<< n << ": \n";
@@ -1078,12 +1088,16 @@ void batree<keyType>::showBuffer(vector<keyType>& buffer, vector<PNODE>& child) 
 
 template<typename keyType>
 void batree<keyType>::showModifyList(char*	fileName) {
-	cout << "In showModifyList\n";
+	cout << "In showModifyList: " << fileName << "\n";
 	ofstream out(fileName);
 	infoIter move = modifyList.begin();
 	while (move != modifyList.end()) {
 		out << (PNODE)move->first;
+		((PNODE)move->first)->show();
+		cout << endl;
 		out << (PMODIFY)move->second;
+		((PMODIFY)move->second)->show();
+		cout << endl;
 		move++;
 	}
 	out.close();
@@ -1092,8 +1106,8 @@ void batree<keyType>::showModifyList(char*	fileName) {
 
 template<typename keyType>
 void batree<keyType>::find(INDEX p) {	//the supporting funciton
-	cout << "Current thread id is: "
-		<< this_thread::get_id() << " -> " << p << '\n';
+	//cout << "Current thread id is: "
+		//<< this_thread::get_id() << " -> " << p << '\n';
 	threadsId[p] = this_thread::get_id();
 	for (int i = 0; i < EACH_NUM; i++) {
 		queries[p][i].setA(search(queries[p][i].getK()));
@@ -1156,7 +1170,7 @@ void batree<keyType>::doShow(ofstream& out, PNODE root, int d) {	//show the node
 
 template<typename keyType>
 void batree<keyType>::show(int	tag, keyType	key) {//API for showing the btrees
-	ofstream out(TREE_FILE_NAME, ios::app);
+	ofstream out(treeFileName, ios::app);
 	out << endl;
 	if (tag == 1) {
 		out << deep << ": ";
@@ -1195,7 +1209,7 @@ void batree<keyType>::doClear(PNODE t) {	//show the nodes in the order of floor
 
 template<typename keyType>
 void batree<keyType>::clear() {//API for free the sources we apply
-	cout << "In clear\n";
+	//cout << "In clear\n";
 	doClear(root);
-	cout << "Out clear!!!\n";
+	//cout << "Out clear!!!\n";
 }

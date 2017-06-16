@@ -15,7 +15,6 @@
 #include <functional>
 #include <unordered_map>
 #include "clk.h"
-#include "node.h"
 #include "info.h"
 #include "query.h"
 #include "modify.h"
@@ -47,27 +46,8 @@ using namespace std;
 template<typename keyType>
 class batree {
 private:
-	friend ofstream& operator<<(ofstream& os, const STEP_TYPE& a) {
-		if (a == FIN_STEP) os << "fin";
-		else if (a == INS_STEP) os << "ins";
-		else if (a == DEL_STEP) os << "del";
-		else if (a == UPD_STEP) os << "upd";
-		else if (a == HED_STEP) os << "hed";
-		else os << "mer";
-		return os;
-	}
-
 	typedef struct node<keyType>	NODE;
 	typedef struct node<keyType>*	PNODE;
-	friend ofstream& operator<<(ofstream& os, const PNODE& a) {
-		os << "0x" << a << " ";
-		if (a) {
-			INDEX i, n = a->key_n;
-			for (i = 0; i < n; i++)
-				os << a->key[i] << " ";
-		}
-		return os;
-	}
 	PNODE	root;
 	int		deep;
 
@@ -76,43 +56,12 @@ private:
 
 	typedef struct info<keyType>	INFO;
 	typedef struct info<keyType>*	PINFO;
-	friend ofstream& operator<<(ofstream& os, const PINFO& a) {
-		PINFO move = a;
-		while (move) {
-			os << '\t';
-			//if (move->type == INS_STEP)
-			//	os << "ins ";
-			//else if (move->type == DEL_STEP)
-			//	os << "del ";
-			//else os << "fin ";
-			os << move->type << " ";
-			os << move->key << '\n';
-			move = move->next;
-		}
-		os << '\n';
-		return os;
-	}
 	//	< PNODE, PINFO >
 	unordered_map<void*, void*>		list;	//store the info for the cur to the upper node
 	typedef unordered_map<void*, void*>::iterator infoIter;
 
 	typedef struct modify<keyType>	MODIFY;
 	typedef struct modify<keyType>*	PMODIFY;
-	friend ofstream& operator<<(ofstream& os, const PMODIFY& a) {
-		PMODIFY move = a;
-		os << "0x" << a << ":\n";
-		while (move) {
-			os << "\t";
-			os << move->type << " ";
-			if (move->type == UPD_STEP)
-				os << move->old << "->";
-			os << move->key << ": ";
-			os << move->leaf << '\n';
-			move = move->next;
-		}
-		os << '\n';
-		return os;
-	}
 	//	< PNODE parent, PMODIFY child>
 	mutex							protectList;	//protect the modifyList
 	unordered_map<void*, void*>		modifyList;
@@ -125,15 +74,17 @@ private:
 
 	my_clock			clk;
 	double				costT;
+	int					variable, testV;
+	char				treeFileName[30];
+	int					current;
 public:
-	batree();
+	batree(int v);
 	~batree();
 	void	getTree();
 	void	fastRandom();				//get the query randomly
 	void	outputQuery(char*	fileName);	//output the query into file
 	void	outputInfo(char*	fileName);	//output the info into file
-	void	palm();					//palm operation for this BPlus tree
-	//int		getDeep();										//support the palm
+	void	palm(char* infoFileName);					//palm operation for this BPlus tree
 	void	handleRoot(infoIter	ope);									//support the palm
 	void	modifyNode(infoIter	inf, INDEX	p);				//the supporting funciton: p ( 0 - leaf, 1 - inner)
 	int		inParent(PNODE	key, PNODE	parent);

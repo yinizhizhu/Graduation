@@ -35,9 +35,23 @@ struct node {
 	void	setC(INDEX i, node* t) { child[i] = t; }
 	void	setP(node* t) { parent = t; }
 	void	show() {
+		cout << key_n << ": ";
 		for (int i = 0; i < key_n; i++)
 			cout << key[i] << " ";
 	}
 };
+
+template<typename keyType>
+ofstream& operator<<(ofstream& os, node<keyType>* a) {
+	//cout << "In output node...\n";
+	os << "0x" << a << " ";
+	if (a) {
+		int i, n = a->key_n;
+		for (i = 0; i < n; i++)
+			os << a->key[i] << " ";
+	}
+	//cout << "Out output node!!!\n";
+	return os;
+}
 
 #endif
