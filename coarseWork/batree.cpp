@@ -1,15 +1,16 @@
 #include "batree.h"
 
 template<typename keyType>
-batree<keyType>::batree() {	//initial
+batree<keyType>::batree(int v) {	//initial
 	root = new node(0, true);
 	queries.resize(THREAD_NUM);
-
-	ofstream out(TREE_FILE_NAME);
+	
+	variable = 20 * v;
+	sprintf(treeFileName, "bPlus%d.txt", variable);
+	ofstream out(treeFileName);
 	out.close();
 	ofstream out2(QUERY_FILE_NAME);
 	out2.close();
-
 	costT = 0;
 }
 
@@ -75,12 +76,12 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 
 	for (i = 0; i < THREAD_NUM; i++) {
 		queries[i].clear();
-		for (j = 0; j < 20; j++)
+		for (j = 0; j < variable; j++)
 			queries[i].push_back(QUERY((STEP_TYPE)(rand() % 2 + 1), rand() % 99));
 	}
 
-	for (j = 0; j < 20; j++) {
-		cout << "Mid fastRandom:" << j << "\n";
+	for (j = 0; j < variable; j++) {
+		//cout << "Mid fastRandom:" << j << "\n";
 		clk.start();
 		for (i = 0; i < THREAD_NUM; i++) {
 			if (queries[i][j].type == INS_STEP)
@@ -92,7 +93,7 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 		for_each(threads.begin(), threads.end(), mem_fn(&thread::join));
 		costT += clk.stop();
 		threads.clear();
-		cout << "Out Mid " << j << "!!!\n";
+		//cout << "Out Mid " << j << "!!!\n";
 	}
 #else
 	vector<int> index;
@@ -139,7 +140,7 @@ void batree<keyType>::fastRandom() {	//get the query randomly
 	show();
 
 	ofstream out("data.txt", ios::app);
-	out << "Your program executed time is " << costT << "ms.\n";
+	out << variable*THREAD_NUM << "\tYour program executed time is " << costT << "ms.\n";
 	out.close();
 	
 	cout << "Out fastRandom!!!\n";
@@ -522,7 +523,7 @@ void batree<keyType>::doShow(ofstream& out, PNODE root, int d) {	//show the node
 template<typename keyType>
 void batree<keyType>::show() {//API for showing the btrees
 	if (root) {
-		ofstream out(TREE_FILE_NAME, ios::app);
+		ofstream out(treeFileName, ios::app);
 		doShow(out, root, 0);
 		out.close();
 	}
@@ -531,7 +532,7 @@ void batree<keyType>::show() {//API for showing the btrees
 template<typename keyType>
 void batree<keyType>::show(int	x, int	y) {//API for showing the btrees
 	if (root) {
-		ofstream out(TREE_FILE_NAME, ios::app);
+		ofstream out(treeFileName, ios::app);
 		out << queries[x][y] << '\n';
 		doShow(out, root, 0);
 		out.close();
