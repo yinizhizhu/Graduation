@@ -1,10 +1,16 @@
 #include "batree.cpp"
 
 int main() {
-	batree<int> r;
+	int i, j;
+	for (i = 1; i <= 7; i++) {
+		for (j = 0; j < 3; j++) {
+			cout << i << " - " << j << "\n";
+			batree<int> r(i);
 #ifndef TESTBTT
-	r.getTree();
+			r.getTree();
 #endif
-	r.fastRandom();
+			r.fastRandom();
+		}
+	}
 	return 0;
 }

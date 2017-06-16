@@ -169,8 +169,11 @@ private:
 
 	my_clock					clk;
 	double						costT;
+
+	int							variable;
+	char						treeFileName[30];
 public:
-	batree();
+	batree(int v);
 	~batree();
 	void	getTree();
 	void	fastRandom();
