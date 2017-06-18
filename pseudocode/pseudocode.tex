@@ -1,0 +1,136 @@
+	palm(m, q, r, ts)
+		//m:操作池, q:操作流, r:树根, ts:线程
+	1	m = search(q)
+	2	m', t' = Redistribute-Work(m, ts)
+	3	m = m ∪ t'.modifyNode(m')
+	4	sync
+	5	for d = 1 to depth(r) - 1
+	6		m', t' = Redistribute-Work(m, ts)
+	7		m = m ∪ t'.modifyNode(m')
+	8		sync
+	9	handleRoot(m, r)
+
+https://www.papeeria.com/p/16c3b3c81ec88a05a00d9a43676693ce#/md/AdaBoost.md
+# palm
+
+## lee
+__function__ palm(_m_, _q_, _r_, _ts_) __returns__ false if an inconsistency is found and true otherwise  
+&emsp;__inputs__: _m_, the pool of operations  
+&emsp;&emsp;&emsp;&emsp;_q_, a batch of queries  
+&emsp;&emsp;&emsp;&emsp;_r_, the root of B+Tree  
+&emsp;&emsp;&emsp;&emsp;_ts_, the manager of threads  
+&emsp;__local variables__: _m'_, the node and the operations which are stick to the node  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_t'_, the thread selected  
+&emsp;__Auxiliary functions__: __search__, return the result of searching for search, and find the node   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;where the thread will work and insert the operation into the pool   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;according to the node   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;__modifyNode__, the thread operate according to the node  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;__redistributeWork__, redistribute work to thread  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;__handleRoot__, handle the root  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;__depth__, return the depth of B+Tree
+
+&emsp;_m_ = __search__(_q_)  
+&emsp;_m'_, _t'_ = __redistributeWork__(_m_, _ts_)  
+&emsp;_m'_ =  _t'_ __.__ __modifyNode__(_m'_)  
+&emsp;_m_ = _m_ \cup _m'_  
+&emsp;__sync__  
+&emsp;__for__ _d_ = 1 __to__ __depth(_r_)__ &minus; 1 __do__  
+&emsp;&emsp;&emsp;_m'_, _t'_ = __redistributeWork__(_m_, _ts_)  
+&emsp;&emsp;&emsp;_m'_ =  _t'_ __.__ __modifyNode__(_m'_)  
+&emsp;&emsp;&emsp;_m_ = _m_ \cup _m'_  
+&emsp;&emsp;&emsp;__sync__  
+&emsp;__handleRoot__(_m_, _r_)  
+
+
+tex:
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+    \setmainfont[]{Droid Serif}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\date{}
+
+\begin{document}
+
+\section{palm}\label{palm}
+
+\subsection{lee}\label{lee}
+
+\textbf{function} palm(\emph{m}, \emph{q}, \emph{r}, \emph{ts})
+\textbf{returns} false if an inconsistency is found and true otherwise\\
+ \textbf{inputs}: \emph{m}, the pool of operations\\
+    \emph{q}, a batch of queries\\
+    \emph{r}, the root of B+Tree\\
+    \emph{ts}, the manager of threads\\
+ \textbf{local variables}: \emph{m'}, the node and the operations which
+are stick to the node\\
+        \emph{t'}, the thread selected\\
+ \textbf{Auxiliary functions}: \textbf{search}, return the result of
+searching for search, and find the node\\
+          where the thread will work and insert the operation into the
+pool\\
+          according to the node\\
+        \textbf{modifyNode}, the thread operate according to the node\\
+        \textbf{redistributeWork}, redistribute work to thread\\
+        \textbf{handleRoot}, handle the root\\
+        \textbf{depth}, return the depth of B+Tree
+
+ \emph{m} = \textbf{search}(\emph{q})\\
+ \emph{m'}, \emph{t'} = \textbf{redistributeWork}(\emph{m}, \emph{ts})\\
+ \emph{m'} = \emph{t'} \textbf{.} \textbf{modifyNode}(\emph{m'})\\
+ \emph{m} = \emph{m} $\cup$ \emph{m'}\\
+ \textbf{sync}\\
+ \textbf{for} \emph{d} = 1 \textbf{to} \textbf{depth(\emph{r})} − 1
+\textbf{do}\\
+   \emph{m'}, \emph{t'} = \textbf{redistributeWork}(\emph{m},
+\emph{ts})\\
+   \emph{m'} = \emph{t'} \textbf{.} \textbf{modifyNode}(\emph{m'})\\
+   \emph{m} = \emph{m} $\cup$ \emph{m'}\\
+   \textbf{sync}\\
+ \textbf{handleRoot}(\emph{m}, \emph{r})
+
+\end{document}
