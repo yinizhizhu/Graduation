@@ -14,7 +14,7 @@ https://www.papeeria.com/p/16c3b3c81ec88a05a00d9a43676693ce#/md/AdaBoost.md
 # palm
 
 ## lee
-__function__ palm(_m_, _q_, _r_, _ts_) __returns__ false if an inconsistency is found and true otherwise  
+__function__ palm(_m_, _q_, _r_, _ts_) __return__ false if an inconsistency is found and true otherwise  
 &emsp;__inputs__: _m_, the pool of operations  
 &emsp;&emsp;&emsp;&emsp;_q_, a batch of queries  
 &emsp;&emsp;&emsp;&emsp;_r_, the root of B+Tree  
@@ -40,7 +40,6 @@ __function__ palm(_m_, _q_, _r_, _ts_) __returns__ false if an inconsistency is 
 &emsp;&emsp;&emsp;_m_ = _m_ \cup _m'_  
 &emsp;&emsp;&emsp;__sync__  
 &emsp;__handleRoot__(_m_, _r_)  
-
 
 tex:
 \documentclass[]{article}
@@ -134,3 +133,137 @@ pool\\
  \textbf{handleRoot}(\emph{m}, \emph{r})
 
 \end{document}
+
+modifyNode
+# modifyNode
+
+## lee
+__function__ modifyNode(_node_, _ops_) __return__ pair(the pointer of B+ tree node, the operations)  
+&emsp;__inputs__: _node_, the node which is being handled  
+&emsp;&emsp;&emsp;&emsp;_ops_, a batch of operations  
+&emsp;__local variables__: _childBuf_, store the pointer which is the child of node  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_buffer_,   store the key   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_new_op_,   store operations which are new   
+
+&emsp;_childBuf_ = _node_.child  
+&emsp;_buffer_ = _node_.key  
+&emsp;__getBuffer__(_childBuf_, _buffer_, _node_, _ops_)  
+&emsp;__sort__(_buffer_.begin, _buffer_.end)  
+&emsp;__if__ _buffer_.size > MAX_DEGREE  
+&emsp;&emsp;&emsp;_new_op_ = __bigSplit__(_childBuf_, _buffer_)  
+&emsp;&emsp;&emsp;__return__ (_node_.parent, _new_op_)  
+&emsp;__else__  
+&emsp;&emsp;&emsp;__if__ _buffer_.size < MIN_DEGREE  
+&emsp;&emsp;&emsp;&emsp;&emsp;__collectionOphaned__(_node_)  
+&emsp;&emsp;&emsp;&emsp;&emsp;__delete__ _node_  
+&emsp;&emsp;&emsp;__return__ (_node_.parent, NULL)  
+
+handleRoot
+# handleRoot
+
+## lee
+__function__ handleRoot(_root_, _ops_) __return__ pair(the pointer of B+ tree node, the operations)  
+&emsp;__inputs__: _root_, the node which is being handled  
+&emsp;&emsp;&emsp;&emsp;_ops_, a batch of operations  
+&emsp;__local variables__: _childBuf_, store the pointer which is the child of node  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_buffer_,   store the key   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_new_op_,   store operations which are new   
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_new_root_,   store the new root of B+ tree   
+
+&emsp;_childBuf_ = _root_.child  
+&emsp;_buffer_ = _root_.key  
+&emsp;__getBuffer__(_childBuf_, _buffer_, _node_, _ops_)  
+&emsp;__sort__(_buffer_.begin, _buffer_.end)  
+&emsp;__if__ _buffer_.size > MAX_DEGREE  
+&emsp;&emsp;&emsp;_new_root_, _new_op_ = __bigSplit__(_childBuf_, _buffer_)  
+&emsp;&emsp;&emsp;_root_ = _new_root_  
+&emsp;&emsp;&emsp;__return__ (_new_root_, _new_op_)  
+&emsp;__else__  
+&emsp;&emsp;&emsp;__if__ _buffer_.size < MIN_DEGREE  
+&emsp;&emsp;&emsp;&emsp;&emsp;_new_root_ = _root_.child  
+&emsp;&emsp;&emsp;&emsp;&emsp;__collectionOphaned__(_root_)  
+&emsp;&emsp;&emsp;&emsp;&emsp;__delete__ _root_  
+&emsp;&emsp;&emsp;&emsp;&emsp;_root_ = _new_root_  
+&emsp;&emsp;&emsp;__return__ (_node_.parent, NULL)  
+
+getBuffer
+# getBuffer
+
+## lee
+__function__ getBuffer(_childBuf_, _buffer_, _node_, _ops_)  
+&emsp;__inputs__: _childBuf_, store the pointer of B+Tree  
+&emsp;&emsp;&emsp;&emsp;_buffer_, store the key  
+&emsp;&emsp;&emsp;&emsp;_node_, the node which is handled  
+&emsp;&emsp;&emsp;&emsp;_ops_, a batch of operations  
+ 
+&emsp;__for__ _op_ in _ops_  
+&emsp;&emsp;&emsp;__if__ _op_.size = INSERT  
+&emsp;&emsp;&emsp;&emsp;&emsp;_buffer_.push(_op_.key)  
+&emsp;&emsp;&emsp;&emsp;&emsp;_childBuf_.push(_op_.child)  
+&emsp;&emsp;&emsp;__else__ __if__ _op_.size = DELETE  
+&emsp;&emsp;&emsp;&emsp;&emsp;_buffer_.pop(_op_.key)  
+&emsp;&emsp;&emsp;&emsp;&emsp;_childBuf_.pop(_op_.child)  
+&emsp;&emsp;&emsp;__else__ //UPDATE  
+&emsp;&emsp;&emsp;&emsp;&emsp;_buffer_.update(_op_.key, _op_.old_key)  
+
+
+splitPath
+# splitPath
+
+## lee
+__function__ splitPath(_node_, _key_) __return__ the pointer of B+ tree node, which is top node for the operation  
+&emsp;__inputs__: _node_, the node which is being handled  
+&emsp;&emsp;&emsp;&emsp;_key_, the key inserted  
+&emsp;__local variables__: _path_, store the path from bottom to top  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_ans_, store the node  
+
+&emsp;__while__ _node_ && _node_.number = MAX_DEGREE  
+&emsp;&emsp;&emsp;_path_.push(_node_)  
+&emsp;&emsp;&emsp;_node_ = _node_.parent  
+&emsp;&emsp;&emsp;__if__ _node_ != NULL  
+&emsp;&emsp;&emsp;&emsp;&emsp;_node_.curLock.lock  
+&emsp;__if__  _path_.empty  
+&emsp;&emsp;&emsp;__return__ _node_  
+&emsp;_node_ = _path_.top  
+&emsp;__if__ _node_.parent = NULL  
+&emsp;&emsp;&emsp;_node_ = __new__ NODE  
+&emsp;&emsp;&emsp;_node_.curLock.lock  
+&emsp;&emsp;&emsp;_node_.setC(0, _root_)  
+&emsp;&emsp;&emsp;_root_.setP(_node_)  
+&emsp;&emsp;&emsp;_root_ = _node_  
+&emsp;__while__ !_path_.empty  
+&emsp;&emsp;&emsp;_node_ = _path_.top  
+&emsp;&emsp;&emsp;_path_.pop  
+&emsp;&emsp;&emsp;__split__(_path_, _node_.parent, _node_.getI())  
+&emsp;_ans_ = findLeaf(node.parent, key)  
+&emsp;_node_.parent.curLock.unlock  
+&emsp;_node_.curLock.unlock  
+&emsp;_ans_.curLock.lock  
+&emsp;__return__ _ans_  
+
+mergePath
+# mergePath
+
+## lee
+__function__ mergePath(_node_, _key_, _op_) __return__ the pointer of B+ tree node, which is top node for the operation  
+&emsp;__inputs__: _node_, the node which is being handled  
+&emsp;&emsp;&emsp;&emsp;_key_, the key inserted  
+&emsp;&emsp;&emsp;&emsp;_op_, the current operation  
+&emsp;__local variables__: _path_, store the path from bottom to top  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_tag_, true for end of path  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;_ans_ _tmp_, store the node  
+
+&emsp;_path_ = {}  
+&emsp;_tag_ = __false__  
+&emsp;_ans_ = __NULL__  
+&emsp;__getPath__(_path_, _node_, _ans_, _tag_, _key_)  
+&emsp;_op_.setC(_ans_)  
+&emsp;__mergeIt__(_path_, _node_, _tmp__, _ans_)  
+&emsp;__if__  _tmp_ != __NULL__  
+&emsp;&emsp;&emsp;_res_ = findLeaf(_tmp_, _key_)  
+&emsp;&emsp;&emsp;__if__ _tmp_ != _ans_  
+&emsp;&emsp;&emsp;&emsp;&emsp;_tmp_.curLock.unlock  
+&emsp;&emsp;&emsp;__return__ _res_  
+&emsp;__if__  _node_ != __NULL__  
+&emsp;&emsp;&emsp;__return__ _node_  
+&emsp;__return__ _root_  
